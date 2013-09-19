@@ -39,6 +39,9 @@ def upload_csv( fileName):
 					notes=row[columnPos['notes']],\
 					gene1=row[columnPos['gene1']],\
 					gene2=row[columnPos['gene2']],\
-					gene3=row[columnPos['gene3']]\
+					gene3=row[columnPos['gene3']],\
+					genotype1=row[columnPos['genotype1']],\
+					genotype2=row[columnPos['genotype2']],\
+					genotype3=row[columnPos['genotype3']]\
 					)
 			mouse.save()

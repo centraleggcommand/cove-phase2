@@ -1,4 +1,15 @@
-<form action="/contact/" method="post">{% csrf_token %}
-{{ form.as_p }}
+{% extends "mouse.html" %}
+
+
+{% block addedFields %}
+<p>
+	{{ form.errors.tod }}
+	<label for="id_tod">Time of death:</label>
+	{{ form.tod }}
+</p>
+{% endblock %}
+
+{% block submit %}
 <input type="submit" value="Submit" />
-</form>
+<input type="button" value="Cancel" />
+{% endblock %}

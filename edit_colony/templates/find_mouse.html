@@ -1,0 +1,16 @@
+{% block jshead %}
+{% endblock %}
+<link rel="stylesheet" type="text/css" href="/static/form.css">
+<form action="/edit_colony/find_mouse/" method="post">{% csrf_token %}
+<p class="caption">Enter a mouse ID</p>
+<div class="editField">
+	<p id="primaryId">
+		{{ form.mouseId.errors }}
+		<label for="id_mouseId">Mouse ID:</label>
+		{{ form.mouseId }}
+	</p>
+</div>
+{% block submit %}
+<input type="submit" value="Submit" />
+{% endblock %}
+</form>

@@ -1,0 +1,105 @@
+{% block jshead %}
+<head>
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
+</script>
+<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+<script>
+	$(document).ready(function() {
+		var geneTags = JSON.parse( '{% autoescape off %}{{ geneList }}{% endautoescape %}' );
+		$("#id_gene1").autocomplete({
+			source: geneTags
+		});
+		$("#id_gene2").autocomplete({
+			source: geneTags
+		});
+		$("#id_gene3").autocomplete({
+			source: geneTags
+		});
+	});
+</script>
+</head>
+{% endblock %}
+
+<link rel="stylesheet" type="text/css" href="/static/form.css">
+<form action={{ submitAction }} method="post">{% csrf_token %}
+{% if header %}
+<p class="caption">{{ header }}</p>
+{% endif %}
+<div class="editField">
+	<p id="primaryId">
+		{{ form.mouseId.errors }}
+		<label for="id_mouseId">Mouse ID:</label>
+		{{ form.mouseId }}
+		{{ form.gender.errors }}
+		<label for="id_gender">Gender:</label>
+		{{ form.gender}}
+	</p>
+	<p>
+		{{ form.fatherId.errors }}
+		<label for="id_fatherId">Father ID:</label>
+		{{ form.fatherId}}
+		{{ form.motherId.errors }}
+		<label for="id_motherId">Mother ID:</label>
+		{{ form.motherId}}
+		{{ form.litter.errors }}
+		<label for="id_litter">Litter:</label>
+		{{ form.litter}}
+	</p>
+	<p>
+		{{ form.notes.errors }}
+		<label for="id_notes">Notes:</label>
+		{{ form.notes}}
+	</p>
+	<p>
+	<table>
+	  <tr>
+	    <td>
+		{% block geneInput1 %}
+		{{ form.errors.gene1 }}
+		<label for="id_gene1">Gene 1:</label>
+		{{ form.gene1 }}
+		{% endblock %}
+	    </td>
+	    <td>
+		{% block geneInput2 %}
+		{{ form.errors.gene2 }}
+		<label for="id_gene2">Gene 2:</label>
+		{{ form.gene2 }}
+		{% endblock %}
+	    </td>
+	    <td>
+		{% block geneInput3 %}
+		{{ form.errors.gene3 }}
+		<label for="id_gene3">Gene 3:</label>
+		{{ form.gene3 }}
+		{% endblock %}
+	    </td>
+	  </tr>
+	  <tr><td>
+		<input type="radio" name="genotype1" value="+/-">+/-<br>
+		<input type="radio" name="genotype1" value="-/-">-/-<br>
+		<input type="radio" name="genotype1" value="WT">+/+(WT)<br>
+		<input type="radio" name="genotype1" value="NA">NA<br>
+	     </td>
+	     <td>
+		<input type="radio" name="genotype2" value="+/-">+/-<br>
+		<input type="radio" name="genotype2" value="-/-">-/-<br>
+		<input type="radio" name="genotype2" value="WT">+/+(WT)<br>
+		<input type="radio" name="genotype2" value="NA">NA<br>
+	     </td>
+	     <td>
+		<input type="radio" name="genotype3" value="+/-">+/-<br>
+		<input type="radio" name="genotype3" value="-/-">-/-<br>
+		<input type="radio" name="genotype3" value="WT">+/+(WT)<br>
+		<input type="radio" name="genotype3" value="NA">NA<br>
+	  </td></tr>
+	</table>
+	</p>
+</div>
+{% block addedFields %}
+{% endblock %}
+{% block submit %}
+<input type="submit" value="Submit" />
+{% endblock %}
+</form>
