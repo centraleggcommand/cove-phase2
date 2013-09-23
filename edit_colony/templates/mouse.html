@@ -1,25 +1,31 @@
-{% block jshead %}
 <head>
-<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
-</script>
-<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+
+{% block jshead %}
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.6.min.js"></script>
 <script>
-	$(document).ready(function() {
-		var geneTags = JSON.parse( '{% autoescape off %}{{ geneList }}{% endautoescape %}' );
-		$("#id_gene1").autocomplete({
-			source: geneTags
-		});
-		$("#id_gene2").autocomplete({
-			source: geneTags
-		});
-		$("#id_gene3").autocomplete({
-			source: geneTags
-		});
+	// This script needs to execute before the jeasyui sourced scripts
+	// for the dynamic options to appear in dropdown list
+	$(document).ready( function() {
+		// remove bullets from auto created list for RadioSelect
+		$("div.genotype ul").each( function() {
+			$(this).css("list-style-type","none")
+			});
+
+		// dynamically created options for gene select
+		$(".easyui-combobox").each( function() {
+			{% for gene in geneList %}
+			$(this).append('<option value="{{gene}}">{{gene}}</option>');
+			{% endfor %}
+			});
 	});
 </script>
-</head>
+<link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/themes/default/easyui.css">
+<link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/themes/icon.css">
+<link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/demo/demo.css">
+<script type="text/javascript" src="http://www.jeasyui.com/easyui/jquery.easyui.min.js"></script>
 {% endblock %}
+
+</head>
 
 <link rel="stylesheet" type="text/css" href="/static/form.css">
 <form action={{ submitAction }} method="post">{% csrf_token %}
@@ -27,27 +33,27 @@
 <p class="caption">{{ header }}</p>
 {% endif %}
 <div class="editField">
-	<p id="primaryId">
-		{{ form.mouseId.errors }}
+	<p>
+		<label class="fielderror">{{ form.mouseId.errors }}</label>
 		<label for="id_mouseId">Mouse ID:</label>
 		{{ form.mouseId }}
-		{{ form.gender.errors }}
+		<label class="fielderror">{{ form.gender.errors }}</label>
 		<label for="id_gender">Gender:</label>
 		{{ form.gender}}
 	</p>
 	<p>
-		{{ form.fatherId.errors }}
+		<label class="fielderror">{{ form.fatherId.errors }}</label>
 		<label for="id_fatherId">Father ID:</label>
 		{{ form.fatherId}}
-		{{ form.motherId.errors }}
+		<label class="fielderror">{{ form.motherId.errors }}</label>
 		<label for="id_motherId">Mother ID:</label>
 		{{ form.motherId}}
-		{{ form.litter.errors }}
+		<label class="fielderror">{{ form.litter.errors }}</label>
 		<label for="id_litter">Litter:</label>
 		{{ form.litter}}
 	</p>
 	<p>
-		{{ form.notes.errors }}
+		<label class="fielderror">{{ form.notes.errors }}</label>
 		<label for="id_notes">Notes:</label>
 		{{ form.notes}}
 	</p>
@@ -56,44 +62,41 @@
 	  <tr>
 	    <td>
 		{% block geneInput1 %}
-		{{ form.errors.gene1 }}
+		<label class="fielderror">{{ form.errors.gene1 }}</label>
 		<label for="id_gene1">Gene 1:</label>
 		{{ form.gene1 }}
 		{% endblock %}
 	    </td>
 	    <td>
 		{% block geneInput2 %}
-		{{ form.errors.gene2 }}
+		<label class="fielderror">{{ form.errors.gene2 }}</label>
 		<label for="id_gene2">Gene 2:</label>
 		{{ form.gene2 }}
 		{% endblock %}
 	    </td>
 	    <td>
 		{% block geneInput3 %}
-		{{ form.errors.gene3 }}
+		<label class="fielderror">{{ form.errors.gene3 }}</label>
 		<label for="id_gene3">Gene 3:</label>
 		{{ form.gene3 }}
 		{% endblock %}
 	    </td>
 	  </tr>
-	  <tr><td>
-		<input type="radio" name="genotype1" value="+/-">+/-<br>
-		<input type="radio" name="genotype1" value="-/-">-/-<br>
-		<input type="radio" name="genotype1" value="WT">+/+(WT)<br>
-		<input type="radio" name="genotype1" value="NA">NA<br>
-	     </td>
-	     <td>
-		<input type="radio" name="genotype2" value="+/-">+/-<br>
-		<input type="radio" name="genotype2" value="-/-">-/-<br>
-		<input type="radio" name="genotype2" value="WT">+/+(WT)<br>
-		<input type="radio" name="genotype2" value="NA">NA<br>
-	     </td>
-	     <td>
-		<input type="radio" name="genotype3" value="+/-">+/-<br>
-		<input type="radio" name="genotype3" value="-/-">-/-<br>
-		<input type="radio" name="genotype3" value="WT">+/+(WT)<br>
-		<input type="radio" name="genotype3" value="NA">NA<br>
-	  </td></tr>
+	  <tr><td><div class="genotype">
+		{% block genotype1 %}
+		{{ form.genotype1 }}
+		{% endblock %}
+	     </div></td>
+	     <td><div class="genotype">
+		{% block genotype2 %}
+		{{ form.genotype2 }}
+		{% endblock %}
+	     </div></td>
+	     <td><div class="genotype">
+		{% block genotype3 %}
+		{{ form.genotype3 }}
+		{% endblock %}
+	  </div></td></tr>
 	</table>
 	</p>
 </div>

@@ -1,8 +1,11 @@
 /* Style for the add and edit mouse forms */
 
 .caption
-{ text-align: center;
+{ text-align: left;
   font-family: arial;
+  color: #3083D6;
+}
+.fielderror
+{ font-family: times;
   color: red;
 }
-

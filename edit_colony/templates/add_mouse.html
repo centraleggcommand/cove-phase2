@@ -1,39 +1,5 @@
 {% extends "mouse.html" %}
 
-{% block jshead %}
-<head>
-<link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/themes/default/easyui.css">
-<link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/themes/icon.css">
-<link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/demo/demo.css">
-<script type="text/javascript" src="http://code.jquery.com/jquery-1.6.min.js"></script>
-<script type="text/javascript" src="http://www.jeasyui.com/easyui/jquery.easyui.min.js"></script>
-{% endblock %}
-
-{% block geneInput1 %}
-<label>Gene 1:</label>
-<select class="easyui-combobox" name="gene1" id="id_gene1">
-	{% for gene in geneList %}
-	<option value="{{gene}}">{{gene}}</option>
-	{% endfor %}
-</select>
-{% endblock %}
-{% block geneInput2 %}
-<label>Gene 2:</label>
-<select class="easyui-combobox" name="gene2" id="id_gene2">
-	{% for gene in geneList %}
-	<option value="{{gene}}">{{gene}}</option>
-	{% endfor %}
-</select>
-{% endblock %}
-{% block geneInput3 %}
-<label>Gene 3:</label>
-<select class="easyui-combobox" name="gene3" id="id_gene3">
-	{% for gene in geneList %}
-	<option value="{{gene}}">{{gene}}</option>
-	{% endfor %}
-</select>
-{% endblock %}
-
 {% block addedFields %}
 <p>
 	<label for="id_tod">Date of birth:</label>

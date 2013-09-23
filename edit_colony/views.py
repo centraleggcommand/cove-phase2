@@ -1,8 +1,9 @@
 # Create your views here.
-import simplejson as json
+import json
 from django.http import HttpResponse
 from django.shortcuts import render
 from django import forms
+from django.core.exceptions import ObjectDoesNotExist
 from mice_db.models import Mouse, Genotype
 
 class MouseEditFind( forms.Form):
@@ -11,6 +12,35 @@ class MouseEditFind( forms.Form):
 class MouseEditForm( forms.ModelForm):
 	class Meta:
 		model = Mouse
+		widgets = {
+			'notes': forms.Textarea(attrs={'cols': 80, 'rows': 5}),
+			'gene1': forms.Select(attrs={'class': "easyui-combobox",
+						'name':"gene1"}),
+			'gene2': forms.Select(attrs={'class': "easyui-combobox",
+						'name':"gene2"}),
+			'gene3': forms.Select(attrs={'class': "easyui-combobox",
+						'name':"gene3"}),
+			'genotype1': forms.RadioSelect(
+						choices=[("+/-", "+/-"), ("-/-", "-/-"),
+								("WT", "+/+(WT)"), ("NA", "NA")]),
+			'genotype2': forms.RadioSelect(
+						choices=[("+/-", "+/-"), ("-/-", "-/-"),
+								("WT", "+/+(WT)"), ("NA", "NA")]),
+			'genotype3': forms.RadioSelect(
+						choices=[("+/-", "+/-"), ("-/-", "-/-"),
+								("WT", "+/+(WT)"), ("NA", "NA")]),
+		}
+
+def mouse_context( submitAction='/edit_colony/add_mouse/', 
+					header='Mouse ID must be unique'):
+	allVars = {}
+	gTypes = []
+	for t in Genotype.objects.all():
+		gTypes.append(t.name)
+	allVars['geneList'] = gTypes
+	allVars['submitAction'] = submitAction
+	allVars['header'] = header
+	return allVars
 
 def add_mouse(request):
 	if request.method == 'POST':
@@ -18,40 +48,26 @@ def add_mouse(request):
 		if request.POST["mouseId"]:
 			try:
 				dbEntry = Mouse.objects.get( mouseId=request.POST["mouseId"] )
-				form = MouseEditForm( request.POST, instance=dbEntry)
-				form.genotype1 = request.POST['genotype1']
-				form.genotype2 = request.POST['genotype2']
-				form.genotype3 = request.POST['genotype3']
+				# This mouseId is already in use - send error
+				form = MouseEditForm( request.POST)
+				form.errors['mouseId'] = \
+				"Mouse ID already in use - enter a new ID"
+				contextVars = mouse_context()
+				contextVars['form'] = form
+				return render( request, 'add_mouse.html', contextVars)
+			except Mouse.DoesNotExist:
+				form = MouseEditForm( request.POST)
 				if form.is_valid():
-					#return HttpResponseRedirect('/edit_menu/')
 					form.save()
 					return HttpResponse("Saved mouse data")
 				else:
-					# Return form with error messages
-					return render( request, 'add_mouse.html', {
-						'form': form,
-						})
-			except DoesNotExist:
-				form = MouseEditForm( request.POST)
-				form.errors['mouseId'] = \
-				"MouseId does not match an existing mouse"
-				return render( request, 'add_mouse.html', {
-					'form': form,
-					})
+					return HttpResponse("Form did not validate")
 	# Default response for form request
 	form = MouseEditForm()
 	# Supply list of used genotypes
-	#gTypes = json.dumps( ["LEF1", "RANKL", "PTHrP"] )
-	gTypes = []
-	for t in Genotype.objects.all():
-		gTypes.append(t.name)
-	#gTypes = json.dumps( gTypes)
-	return render( request, 'add_mouse.html', {
-		'form': form,
-		'geneList': gTypes,
-		'submitAction': '/edit_colony/add_mouse/',
-		'header': 'Mouse IDs must be unique',
-		})
+	contextVars = mouse_context()
+	contextVars['form'] = form
+	return render( request, 'add_mouse.html', contextVars)
 
 def edit_mouse(request):
 	if request.method == 'POST':
@@ -60,39 +76,28 @@ def edit_mouse(request):
 			try:
 				dbEntry = Mouse.objects.get( mouseId=request.POST["mouseId"] )
 				form = MouseEditForm( request.POST, instance=dbEntry)
-				form.genotype1 = request.POST['genotype1']
-				form.genotype2 = request.POST['genotype2']
-				form.genotype3 = request.POST['genotype3']
 				if form.is_valid():
-					#return HttpResponseRedirect('/edit_menu/')
 					form.save()
 					return HttpResponse("Saved mouse data")
 				else:
 					# Return form with error messages
-					return render( request, 'edit_mouse.html', {
-						'form': form,
-						})
-			except DoesNotExist:
+					contextVars = mouse_context()
+					contextVars['form'] = form
+					return render( request, 'edit_mouse.html', contextVars)
+			except Mouse.DoesNotExist:
 				form = MouseEditForm( request.POST)
 				form.errors['mouseId'] = \
 				"MouseId does not match an existing mouse"
-				return render( request, 'edit_mouse.html', {
-					'form': form,
-					})
+				contextVars = mouse_context()
+				contextVars['form'] = form
+				return render( request, 'edit_mouse.html', contextVars)
 	# Default response for form request
 	form = MouseEditForm()
 	# Supply list of used genotypes
-	#gTypes = json.dumps( ["LEF1", "RANKL", "PTHrP"] )
-	gTypes = []
-	for t in Genotype.objects.all():
-		gTypes.append(t.name)
-	gTypes = json.dumps( gTypes)
-	return render( request, 'edit_mouse.html', {
-		'form': form,
-		'geneList': gTypes,
-		'submitAction': '/edit_colony/edit_mouse/',
-		'header': 'Enter a mouse ID',
-		})
+	contextVars = mouse_context(submitAction='/edit_colony/edit_mouse/',
+								header='Enter a mouse ID')
+	contextVars['form'] = form
+	return render( request, 'edit_mouse.html', contextVars)
 
 def find_mouse(request):
 	if request.method == 'POST':
@@ -101,12 +106,12 @@ def find_mouse(request):
 			try:
 				dbEntry = Mouse.objects.get( mouseId=request.POST["mouseId"] )
 				form = MouseEditForm( instance=dbEntry)
-				return render( request, 'edit_mouse.html', {
-						'form': form,
-						'submitAction': '/edit_colony/edit_mouse/',
-						'header': 'Enter a mouse ID',
-						})
-			except DoesNotExist:
+				contextVars = mouse_context(
+								submitAction='/edit_colony/edit_mouse/',
+								header='Edit mouse')
+				contextVars['form'] = form
+				return render( request, 'edit_mouse.html', contextVars)
+			except Mouse.DoesNotExist:
 				form = MouseEditFind()
 				form.errors['mouseId'] = "The mouse ID was not valid"
 				return render( request, 'find_mouse.html', {
