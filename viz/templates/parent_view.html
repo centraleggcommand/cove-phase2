@@ -33,7 +33,7 @@
 var width = 400,
     height = 700;
 
-var cluster = d3.layout.cluster()
+var tree = d3.layout.tree()
     .size([height, width - 100]);
 
 var diagonal = d3.svg.diagonal()
@@ -47,8 +47,8 @@ var svg = d3.select("body").append("svg")
 
 var root = JSON.parse( '{{ json_lineage|safe }}' );
 console.log(root);
-var nodes = cluster.nodes(root);
-var links = cluster.links(nodes);
+var nodes = tree.nodes(root);
+var links = tree.links(nodes);
 
 var link = svg.selectAll(".link")
     .data(links)
