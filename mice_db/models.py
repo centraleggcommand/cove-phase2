@@ -5,12 +5,12 @@ from django.db import models
 # and then running 'python manage.py syncdb' will create the tables
 
 class Mouse(models.Model):
-	mouseId = models.IntegerField(primary_key=True)
+	mouseId = models.CharField(max_length=15, primary_key=True)
 	colonyId = models.ForeignKey('Colony', blank=True, null=True, on_delete=models.SET_NULL)
 	gender = models.CharField(max_length=1)
 	litter = models.IntegerField(default=0)
-	fatherId = models.IntegerField(default=0)
-	motherId = models.IntegerField(default=0)
+	fatherId = models.CharField(max_length=15, blank=True)
+	motherId = models.CharField(max_length=15, blank=True)
 	dobMonth = models.IntegerField(null=True, blank=True)
 	dobDay = models.IntegerField(null=True, blank=True)
 	dobYear = models.IntegerField(null=True, blank=True)

@@ -15,4 +15,5 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     # url(r'^admin/', include(admin.site.urls)),
 	url(r'^edit_colony/', include( 'edit_colony.urls')),
+	url(r'^viz/', include( 'viz.urls')),
 )
