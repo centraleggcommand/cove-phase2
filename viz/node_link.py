@@ -56,7 +56,7 @@ def lineage(nodeId, mice):
 	return node
 
 def get_lineage( rootId):
-	allMice = Mouse.objects.values("mouseId", "fatherId", "motherId")
+	allMice = Mouse.objects.values("mouseId", "fatherId", "motherId", "gender")
 	return lineage( rootId, allMice)
 
 def get_json_lineage( rootId):

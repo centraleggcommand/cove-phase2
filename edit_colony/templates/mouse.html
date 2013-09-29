@@ -1,6 +1,9 @@
+<!DOCTYPE html>
+
+<html>
+
 <head>
 
-{% block jshead %}
 <script type="text/javascript" src="http://code.jquery.com/jquery-1.6.min.js"></script>
 <script>
 	// This script needs to execute before the jeasyui sourced scripts
@@ -23,9 +26,13 @@
 <link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/themes/icon.css">
 <link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/demo/demo.css">
 <script type="text/javascript" src="http://www.jeasyui.com/easyui/jquery.easyui.min.js"></script>
+
+{% block jshead %}
 {% endblock %}
 
 </head>
+
+<body>
 
 <link rel="stylesheet" type="text/css" href="/static/form.css">
 <form action={{ submitAction }} method="post">{% csrf_token %}
@@ -106,3 +113,6 @@
 <input type="submit" value="Submit" />
 {% endblock %}
 </form>
+
+</body>
+</html>

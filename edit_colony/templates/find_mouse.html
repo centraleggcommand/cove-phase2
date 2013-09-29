@@ -1,6 +1,15 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
 {% block jshead %}
 {% endblock %}
 <link rel="stylesheet" type="text/css" href="/static/form.css">
+
+</head>
+
 <form action="/edit_colony/find_mouse/" method="post">{% csrf_token %}
 <p class="caption">Enter a mouse ID</p>
 <div class="editField">
@@ -14,3 +23,5 @@
 <input type="submit" value="Submit" />
 {% endblock %}
 </form>
+
+</html>
