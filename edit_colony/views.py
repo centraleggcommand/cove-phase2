@@ -91,6 +91,18 @@ def edit_mouse(request):
 				contextVars = mouse_context()
 				contextVars['form'] = form
 				return render( request, 'edit_mouse.html', contextVars)
+	elif request.method == 'GET':
+		mId = request.GET["mouseId"]
+        try:
+            dbEntry = Mouse.objects.get( mouseId=mId )
+            form = MouseEditForm( instance=dbEntry)
+            contextVars = mouse_context(
+                            submitAction='/edit_colony/edit_mouse/',
+                            header='Edit mouse')
+            contextVars['form'] = form
+            return render( request, 'edit_mouse.html', contextVars)
+        except Mouse.DoesNotExist:
+            return HttpResponse("The mouse ID was not found in the database")
 	# Default response for form request
 	form = MouseEditForm()
 	# Supply list of used genotypes
@@ -100,31 +112,28 @@ def edit_mouse(request):
 	return render( request, 'edit_mouse.html', contextVars)
 
 def find_mouse(request):
-	if request.method == 'POST':
-		# Bind POST data to form obj and associate with row in db
-		if request.POST["mouseId"]:
-			try:
-				dbEntry = Mouse.objects.get( mouseId=request.POST["mouseId"] )
-				form = MouseEditForm( instance=dbEntry)
-				contextVars = mouse_context(
-								submitAction='/edit_colony/edit_mouse/',
-								header='Edit mouse')
-				contextVars['form'] = form
-				return render( request, 'edit_mouse.html', contextVars)
-			except Mouse.DoesNotExist:
-				form = MouseEditFind()
-				form.errors['mouseId'] = "The mouse ID was not valid"
-				return render( request, 'find_mouse.html', {
-					'form': form,
-					})
-		else:
-			form = MouseEditFind()
-			form.errors['mouseId'] = "A mouse ID is required"
-			return render( request, 'find_mouse.html', {
-				'form': form,
-				})
+#       if request.method == 'POST':
+#   		# Bind POST data to form obj and associate with row in db
+#   		if request.POST["mouseId"]:
+#   			try:
+#   				dbEntry = Mouse.objects.get( mouseId=request.POST["mouseId"] )
+#   				form = MouseEditForm( instance=dbEntry)
+#   				contextVars = mouse_context(
+#   								submitAction='/edit_colony/edit_mouse/',
+#   								header='Edit mouse')
+#   				contextVars['form'] = form
+#   				return render( request, 'edit_mouse.html', contextVars)
+#   			except Mouse.DoesNotExist:
+#   				form = MouseEditFind()
+#   				form.errors['mouseId'] = "The mouse ID was not valid"
+#   				return render( request, 'find_mouse.html', {
+#   					'form': form,
+#   					})
+#   		else:
+#   			form = MouseEditFind()
+#   			form.errors['mouseId'] = "A mouse ID is required"
+#   			return render( request, 'find_mouse.html', {
+#   				'form': form,
+#   				})
 	# Default
-	form = MouseEditFind()
-	return render( request, 'find_mouse.html', {
-		'form': form,
-		})
+	return render( request, 'find_mouse.html')
