@@ -6,9 +6,6 @@ from django import forms
 from django.core.exceptions import ObjectDoesNotExist
 from mice_db.models import Mouse, Genotype
 
-class MouseEditFind( forms.Form):
-	mouseId = forms.CharField(max_length=15)
-
 class MouseEditForm( forms.ModelForm):
 	class Meta:
 		model = Mouse
@@ -111,7 +108,7 @@ def edit_mouse(request):
 	contextVars['form'] = form
 	return render( request, 'edit_mouse.html', contextVars)
 
-def find_mouse(request):
+def find_edit(request):
 #       if request.method == 'POST':
 #   		# Bind POST data to form obj and associate with row in db
 #   		if request.POST["mouseId"]:
@@ -136,4 +133,6 @@ def find_mouse(request):
 #   				'form': form,
 #   				})
 	# Default
-	return render( request, 'find_mouse.html')
+	return render( request, 'find_edit.html', {
+        'iSrc':"/edit_colony/edit_mouse/",
+    })
