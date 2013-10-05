@@ -28,13 +28,19 @@ class MouseEditForm( forms.ModelForm):
 								("WT", "+/+(WT)"), ("NA", "NA")]),
 		}
 
-def mouse_context( submitAction='/edit_colony/add_mouse/', 
+def mouse_context( gene1Val='',
+				   gene2Val='',
+				   gene3Val='',
+					submitAction='/edit_colony/add_mouse/',
 					header='Mouse ID must be unique'):
 	allVars = {}
 	gTypes = []
 	for t in Genotype.objects.all():
 		gTypes.append(t.name)
 	allVars['geneList'] = gTypes
+	allVars['gene1Val'] = gene1Val
+	allVars['gene2Val'] = gene2Val
+	allVars['gene3Val'] = gene3Val
 	allVars['submitAction'] = submitAction
 	allVars['header'] = header
 	return allVars
@@ -90,16 +96,19 @@ def edit_mouse(request):
 				return render( request, 'edit_mouse.html', contextVars)
 	elif request.method == 'GET':
 		mId = request.GET["mouseId"]
-        try:
-            dbEntry = Mouse.objects.get( mouseId=mId )
-            form = MouseEditForm( instance=dbEntry)
-            contextVars = mouse_context(
-                            submitAction='/edit_colony/edit_mouse/',
-                            header='Edit mouse')
-            contextVars['form'] = form
-            return render( request, 'edit_mouse.html', contextVars)
-        except Mouse.DoesNotExist:
-            return HttpResponse("The mouse ID was not found in the database")
+		try:
+			dbEntry = Mouse.objects.get( mouseId=mId )
+			form = MouseEditForm( instance=dbEntry)
+			contextVars = mouse_context(
+							gene1Val=dbEntry.gene1,
+							gene2Val=dbEntry.gene2,
+							gene3Val=dbEntry.gene3,
+							submitAction='/edit_colony/edit_mouse/',
+							header='Edit mouse')
+			contextVars['form'] = form
+			return render( request, 'edit_mouse.html', contextVars)
+		except Mouse.DoesNotExist:
+			return HttpResponse("The mouse ID was not found in the database")
 	# Default response for form request
 	form = MouseEditForm()
 	# Supply list of used genotypes
@@ -134,5 +143,5 @@ def find_edit(request):
 #   				})
 	# Default
 	return render( request, 'find_edit.html', {
-        'iSrc':"/edit_colony/edit_mouse/",
-    })
+		'iSrc':"/edit_colony/edit_mouse/",
+	})

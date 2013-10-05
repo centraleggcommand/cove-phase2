@@ -113,7 +113,8 @@ TEMPLATE_DIRS = (
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
 	'/home/user/cove/COVE/edit_colony/templates',
-	'/home/user/cove/COVE/viz/templates'
+	'/home/user/cove/COVE/viz/templates',
+    '/home/user/cove/COVE/menu/templates'
 )
 
 INSTALLED_APPS = (
@@ -128,6 +129,7 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 	'mice_db',
+	'django_bootstrap_staticfiles',
 )
 
 # A sample logging configuration. The only tangible logging
