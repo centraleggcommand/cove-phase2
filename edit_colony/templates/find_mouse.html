@@ -12,11 +12,12 @@
         $("#btnMouse").click( function() {
             if ($("#txtMouse").val()) {
                 if ($("#editsection").find("iframe").length > 0) {
-                    var ifrSource = '/edit_colony/edit_mouse/?mouseId=' + $("#txtMouse").val();
+                    //var ifrSource = '/edit_colony/edit_mouse/?mouseId=' + $("#txtMouse").val();
+                    var ifrSource = '{{ iSrc }}?mouseId=' + $("#txtMouse").val();
                     $("#editsection").find("iframe").attr("src", ifrSource);
                 }
                 else {
-                    $("#editsection").append('<iframe src="/edit_colony/edit_mouse/?mouseId=' +
+                    $("#editsection").append('<iframe src="{{ iSrc }}?mouseId=' +
                         $("#txtMouse").val() + '" height="300" width="100%"></iframe>');
                 }
             }
@@ -26,7 +27,9 @@
 
 </head>
 
-<p class="caption">Edit a Mouse</p>
+{% block title %}
+{% endblock %}
+
 <div class="editField">
 	<p id="primaryId">
 		<label>Mouse ID:</label>

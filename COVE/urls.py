@@ -16,4 +16,5 @@ urlpatterns = patterns('',
     # url(r'^admin/', include(admin.site.urls)),
 	url(r'^edit_colony/', include( 'edit_colony.urls')),
 	url(r'^viz/', include( 'viz.urls')),
+    url(r'^menu/', include( 'menu.urls')),
 )

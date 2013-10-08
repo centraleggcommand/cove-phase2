@@ -16,8 +16,24 @@
 
 		// dynamically created options for gene select
 		$(".easyui-combobox").each( function() {
+            var selectedVal;
+            // Pre-select the option stored in the template's context variable
+            if( $(this).attr("name") == "gene1") {
+                selectedVal = "{{ gene1Val }}";
+            }
+            else if( $(this).attr("name") == "gene2") {
+                selectedVal = "{{ gene2Val }}";
+            }
+            else if( $(this).attr("name") == "gene3") {
+                selectedVal = "{{ gene3Val }}";
+            }
 			{% for gene in geneList %}
-			$(this).append('<option value="{{gene}}">{{gene}}</option>');
+                if( "{{gene}}" == selectedVal ) {
+			        $(this).append('<option value="{{gene}}" selected>{{gene}}</option>');
+                }
+                else {
+                    $(this).append('<option value="{{gene}}">{{gene}}</option>');
+                }
 			{% endfor %}
 			});
 	});
