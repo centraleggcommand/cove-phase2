@@ -37,6 +37,7 @@
 <link rel="stylesheet" type="text/css" href="/static/form.css">
 <form action={{ submitAction }} method="post">{% csrf_token %}
 {% if header %}
+
 <p class="caption">{{ header }}</p>
 {% endif %}
 <div class="editField">
