@@ -25,7 +25,9 @@ def draw_lineage(request):
         try:
             dbEntry = Mouse.objects.get( mouseId=request.GET["mouseId"])
             json_lineage = nodelink.get_json_lineage(request.GET["mouseId"])
-            contextVars = {'json_lineage': json_lineage}
+            contextVars = {'json_lineage': json_lineage,
+                           'iSrcEdit':"/edit_colony/edit_mouse/",
+            }
             return render(request, 'lineage_view.html', contextVars)
         except Mouse.DoesNotExist:
             return HttpResponse("The mouse ID was not found in the database")

@@ -6,14 +6,19 @@
 
 <style>
 
-.node circle {
+circle {
   fill: #fff;
   stroke: steelblue;
-  stroke-width: 1.5px;
+  stroke-width: 1px;
 }
 
 .node {
   font: 10px sans-serif;
+}
+
+.selected {
+    stroke: #66FF33;
+    stroke-width: 3px;
 }
 
 .link {
@@ -30,8 +35,9 @@
 
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script>
-var width = 550,
-    height = 550;
+var width = 450,
+    height = 450;
+var margin = 15;
 
 var tree = d3.layout.tree()
     .size([height -100, width -100]);
@@ -43,7 +49,76 @@ var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height)
   .append("g")
-    .attr("transform", "translate(10,0) rotate(-90 " + (width/2 + 25) + " " + (height/2 - 50) + ")");
+    .attr("id", "plot")
+    .attr("transform", "translate(15,10) rotate(-90 " + (width/2 + 25) + " " + (height/2 - 50) + ")");
+
+d3.select("body").append("div").attr("id","nodeedit");
+
+function addIframeEdit(selectedId) {
+    var ifrSource = '{{ iSrcEdit }}?mouseId=' + selectedId;
+    if (d3.select("#nodeedit").select("iframe").size() > 0) {
+        d3.select("#nodeedit").select("iframe").attr("src", ifrSource);
+    }
+    else {
+        d3.select("#nodeedit").append("iframe")
+        .attr("src",ifrSource)
+        .attr("height",400)
+        .attr("width","100%");
+    }
+}
+ // referenced http://bl.ocks.org/sjengle/5432385
+function addTooltip(element) {
+    //var x = parseFloat(circle.attr("cx"));
+    //var y = parseFloat(circle.attr("cy"));
+    var circle = d3.select(element);
+    var r = parseFloat(circle.attr("r"));
+    var text = "Edit mouse " + circle.datum().mouseId;
+
+    //Position of text dependent on parent transform, combined with transform here
+    var parent = d3.select(element.parentNode);
+    var tooltip = parent.append("text")
+        .text(text)
+        .style("fill","#2E8AE6")
+        .attr("transform", "translate(20,10) rotate(90)")
+        .on("click", function() {
+            addIframeEdit(circle.datum().mouseId);
+        })
+        .on("mouseover", function() {
+            d3.select(this).style("font-weight","bold");
+        })
+        .on("mouseout", function() {
+            d3.select(this).style("font-weight","normal");
+        })
+        .classed("tooltip", true);
+    //var tooltipBBox = tooltip.node().getBBox();
+    //var tooltipBlock = parent.append("rect")
+    //    .style("fill","#FFEE99")
+    //    .style("fill-opacity",0.7)
+    //    .attr("width", tooltipBBox.width)
+    //    .attr("height", tooltipBBox.height)
+    //    .attr("transform", "translate(30,10) rotate(90)")
+    //    .classed("tooltip", true);
+
+    var plotArea = d3.select("#plot");
+    var plotWidth = plotArea.node().getBBox().width;
+
+    // Guess position of text relative to borders and adjust if needed
+    if (tooltip.attr("x") < 0) {
+        tooltip.attr("text-anchor", "start");
+    //    tooltip.attr("dx", -r);
+    }
+    else if (tooltip.attr("x") > plotWidth) {
+        tooltip.attr("text-anchor", "end");
+    //    tooltipBlock.attr("transform", "translate(-" + (tooltipBBox.width + 30) + ",10) rotate(90)");
+    //    tooltip.attr("dx", r);
+    }
+    else {
+        tooltip.attr("text-anchor", "middle");
+    //    tooltipBlock.attr("transform", "translate(-" + (tooltipBBox.width/2 + 30) + ",10) rotate(90)");
+    //    tooltip.attr("dx", 0);
+    }
+
+}
 
 var root = JSON.parse( '{{ json_lineage|safe }}' );
 console.log(root);
@@ -57,13 +132,13 @@ var link = svg.selectAll(".link")
     .attr("class", "link")
     .attr("d", diagonal);
 
-var node = svg.selectAll(".node")
+var nodeElements = svg.selectAll(".node")
     .data(nodes)
   .enter().append("g")
     .attr("class", "node")
     .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
 
-node.append("circle")
+nodeElements.append("circle")
     .attr("r", 4.5)
     .style("fill", function(d) {
         if(d.gender == "F") {
@@ -72,9 +147,17 @@ node.append("circle")
         else {
             return "#3366FF";
         }
+    })
+    .on("click", function() {
+        //undo any previous selection
+        d3.select(".tooltip").remove();
+        d3.select(".selected").classed("selected", false);
+        var curr = d3.select(this)
+        curr.classed("selected", true);
+        addTooltip(this);
     });
 
-node.append("text")
+nodeElements.append("text")
     .attr("dx", function(d) { return d.children ? -8 : 8; })
     .attr("dy", 3)
     //.style("text-anchor", function(d) { return d.children ? "end" : "start"; })
