@@ -79,7 +79,7 @@ function addTooltip(element) {
     var tooltip = parent.append("text")
         .text(text)
         .style("fill","#2E8AE6")
-        .attr("transform", "translate(20,10) rotate(90)")
+        .attr("transform", "translate(20,0) rotate(90)")
         .on("click", function() {
             addIframeEdit(circle.datum().mouseId);
         })
@@ -90,32 +90,21 @@ function addTooltip(element) {
             d3.select(this).style("font-weight","normal");
         })
         .classed("tooltip", true);
-    //var tooltipBBox = tooltip.node().getBBox();
-    //var tooltipBlock = parent.append("rect")
-    //    .style("fill","#FFEE99")
-    //    .style("fill-opacity",0.7)
-    //    .attr("width", tooltipBBox.width)
-    //    .attr("height", tooltipBBox.height)
-    //    .attr("transform", "translate(30,10) rotate(90)")
-    //    .classed("tooltip", true);
 
     var plotArea = d3.select("#plot");
     var plotWidth = plotArea.node().getBBox().width;
 
     // Guess position of text relative to borders and adjust if needed
-    if (tooltip.attr("x") < 0) {
+    var tooltipBBox = tooltip.node().getBBox();
+
+    if ( (parseInt( parent.attr("x")) - (tooltipBBox.width / 2) ) < 0) {
         tooltip.attr("text-anchor", "start");
-    //    tooltip.attr("dx", -r);
     }
-    else if (tooltip.attr("x") > plotWidth) {
+    else if ( (parseInt( parent.attr("x")) + (tooltipBBox.width / 2) ) > plotWidth) {
         tooltip.attr("text-anchor", "end");
-    //    tooltipBlock.attr("transform", "translate(-" + (tooltipBBox.width + 30) + ",10) rotate(90)");
-    //    tooltip.attr("dx", r);
     }
     else {
         tooltip.attr("text-anchor", "middle");
-    //    tooltipBlock.attr("transform", "translate(-" + (tooltipBBox.width/2 + 30) + ",10) rotate(90)");
-    //    tooltip.attr("dx", 0);
     }
 
 }
@@ -137,6 +126,9 @@ var nodeElements = svg.selectAll(".node")
   .enter().append("g")
     .attr("class", "node")
     .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+    // Make absolute position info easier to access for child elements that maintain relative position.
+    .attr("x", function( d) { return d.x;})
+    .attr("y", function( d) { return d.y;});
 
 nodeElements.append("circle")
     .attr("r", 4.5)
