@@ -4,4 +4,5 @@ from viz import views
 urlpatterns = patterns('',
     url(r'find_lineage/?$', views.find_lineage, name='find_lineage'),
 	url(r'lineage_view/?$', views.draw_lineage, name='lineage'),
+    url(r'force_view/?$', views.draw_force, name='force'),
 )

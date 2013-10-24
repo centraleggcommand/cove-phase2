@@ -1,7 +1,7 @@
 # Create your views here.
 from django.shortcuts import render
 from django import forms
-import viz.node_link as nodelink
+import viz.data_retrieval as vizd
 from django.core.exceptions import ObjectDoesNotExist
 from mice_db.models import Mouse
 from django.http import HttpResponse
@@ -24,7 +24,7 @@ def draw_lineage(request):
     if request.method == "GET":
         try:
             dbEntry = Mouse.objects.get( mouseId=request.GET["mouseId"])
-            json_lineage = nodelink.get_json_lineage(request.GET["mouseId"])
+            json_lineage = vizd.get_json_lineage(request.GET["mouseId"])
             contextVars = {'json_lineage': json_lineage,
                            'iSrcEdit':"/edit_colony/edit_mouse/",
             }
@@ -37,3 +37,10 @@ def find_lineage(request):
     return render( request, 'find_lineage.html', {
         'iSrc':"/viz/lineage_view/",
     })
+
+def draw_force(request):
+    if request.method == "GET":
+        # Need data of all mice in json format
+        jsonAllMice = vizd.all_mice_gen()
+        contextVars = {'jsonAllMice': jsonAllMice}
+        return render(request, 'force_view.html', contextVars)
