@@ -1,7 +1,7 @@
 import json
 from mice_db.models import Mouse
 
-# This module is to create the json structure expected by D3
+# The following functions are used to create the json structure expected by D3
 # to support node-link diagrams.
 # Assumes a table with unique mouseId and possible fatherId and motherId
 
@@ -62,3 +62,36 @@ def get_lineage( rootId):
 def get_json_lineage( rootId):
 	return json.dumps( get_lineage( rootId) )
 
+################################################
+# The following functions support the force_view
+
+def mouse_json(mObj):
+    return {
+    "mouseId" : mObj.mouseId,
+    "gender" : mObj.gender,
+    "litter" : mObj.litter,
+    "fatherId" : mObj.fatherId,
+    "motherId" : mObj.motherId,
+    "gene1" : mObj.gene1,
+    "gene2" : mObj.gene2,
+    "gene3" : mObj.gene3,
+    "genotype1" : mObj.genotype1,
+    "genotype2" : mObj.genotype2,
+    "genotype3" : mObj.genotype3,
+    "generation" : mObj.generation }
+
+def all_mice_gen():
+    allMice = []
+    genNum = 0
+    genQuery = Mouse.objects.all().filter( generation=genNum)
+    querySize = len(genQuery)
+    while querySize > 0:
+        #allMice[genNum] = []
+        #for mouse in genQuery:
+        #    #allMice[genNum].append( mouse_json(mouse))
+        #    currGen.append( mouse_json(mouse))
+        allMice.append( [mouse_json(m) for m in genQuery])
+        genNum += 1
+        genQuery = Mouse.objects.all().filter( generation=genNum)
+        querySize = len(genQuery)
+    return json.dumps( allMice)

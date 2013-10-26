@@ -2,8 +2,8 @@
 
 .caption
 { text-align: left;
-  font-family: arial;
-  color: #3083D6;
+  font-family: sans-serif;
+  color: darkgrey;
 }
 .fielderror
 { font-family: times;

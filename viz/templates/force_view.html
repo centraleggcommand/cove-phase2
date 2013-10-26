@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+
+<!-- Reference http://bl.ocks.org/mbostock/1021841 -->
+
+<meta charset="utf-8">
+<style>
+
+.node {
+  stroke-width: 1.5px;
+}
+
+</style>
+
+<body>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.6.min.js"></script>
+
+<script>
+// The var FV is a container for global data to be referenced explicitly.
+var FV = {};
+
+function initialize() {
+    FV.allMice = JSON.parse( '{{ jsonAllMice | safe}}');
+    //Reverse the list for popping
+    FV.miceGenData = [];
+    for (var i=FV.allMice.length -1; i >=0; i--) {
+        FV.miceGenData.push( FV.allMice[i]);
+    }
+
+    FV.width = 550,
+    FV.height = 450;
+    FV.fill = d3.scale.category10();
+    FV.genFoci = [];
+    var segmentSize = FV.width/FV.allMice.length;
+    for (var i=0; i < FV.allMice.length; i++) {
+        // Calc the midpoint of a segment
+        FV.genFoci[i] = ((i+1) * segmentSize) - segmentSize/2;
+    }
+}
+
+function handle_color() {
+    var selected = this.value;
+    if (selected == "genotype") {
+        d3.select("#gene_selector").style("display","inline")
+    }
+    else {
+        d3.select("#gene_selector").style("display","none")
+    }
+}
+
+function assign_color( d) {
+    var grp = FV.sel.options[FV.sel.selectedIndex].value;
+    if (grp == "gender") {
+        if(d.gender == "F") {
+            return "#FF7575";
+        }
+        else {
+            return "#3366FF";
+        }
+    }
+}
+
+initialize();
+
+$(document).ready( function() {
+    FV.layoutNodes = [];
+    FV.force = d3.layout.force()
+            .nodes( FV.layoutNodes )// Show only root generation then add others incrementally.
+            .size([FV.width, FV.height])
+            .on("tick", tick)
+            .start();
+
+    FV.svg = d3.select("#graph").append("svg")
+        .attr("width", FV.width)
+        .attr("height", FV.height);
+
+    FV.sel = d3.select("#selectColorGroup")
+        .node();
+    d3.select("#selectColorGroup").on("change", handle_color);
+
+    FV.svg.style("opacity", 1e-6)
+        .transition()
+        .duration(1000)
+        .style("opacity", 1);
+
+    FV.interval = setInterval( function() {
+        if (FV.miceGenData.length > 0) {
+            var currGen = FV.miceGenData.pop();
+            var currGenClass = "gen" + currGen[0].generation;
+            //Need to preserve object referenced by force layout so pushing instead of concat.
+            for (var i=0; i<currGen.length; i++) {
+                FV.layoutNodes.push(currGen[i]);
+            }
+            FV.force.start();
+            FV.svg.selectAll(".node").data(FV.layoutNodes, get_id)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .classed("node", "true")
+                .classed(currGenClass, "true")
+                .attr("r", 4)
+                .style("fill", function(d, i) { return assign_color(d); })
+                .style("opacity", "0.1")
+                .call(FV.force.drag);
+            d3.selectAll("." + currGenClass).transition().delay( function(d,i) {return i*0.2;})
+                .duration(800)
+                .style("opacity","0.9");
+        }
+        else {
+            clearInterval(FV.interval);
+        }
+    }, 1500);
+
+    FV.all_foci = function(o) {
+        return { 'x': FV.width/2, 'y': FV.height/2 };
+    }
+
+    FV.gen_foci = function(o) {
+        return { 'x': FV.genFoci[o.generation], 'y': FV.height/2 };
+    }
+
+    FV.gender_offset = function(o) {
+        return (o.gender == "F") ? -20 : 20;
+    }
+
+    FV.genotype_offset = function(o) {
+
+    }
+
+    // Set default function to use when clustering nodes.
+    FV.foci_fxn = FV.all_foci;
+    FV.color_offset = FV.gender_offset;
+
+    d3.select("#btnAll").on("click", function() {
+        FV.foci_fxn = FV.all_foci;
+        FV.force.resume();
+    })
+
+    d3.select("#btnGen").on("click", function() {
+        FV.foci_fxn = FV.gen_foci;
+        FV.force.resume();
+    })
+
+    function get_id( d) {
+        return d.mouseId;
+    }
+
+    function tick(e) {
+        // Push nodes toward their designated focus.
+        var nodeSet = FV.svg.selectAll(".node");
+        var k = 0.05 * e.alpha;
+        nodeSet.each(function(o, i) {
+            var target = FV.foci_fxn(o);
+            o.x += (target['x'] + FV.color_offset(o) - o.x) * k;
+            o.y += (target['y'] - o.y) * k;
+            })
+        // Update drawn circle
+        nodeSet.attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; });
+    }
+
+});
+
+</script>
+
+<div id="filters">
+<table cellspacing="10">
+    <tr><td>
+        <label>Color Group: </label>
+        <select id="selectColorGroup">
+            <option value="gender" selected="true">Gender</option>
+            <option value="genotype">Genotype</option>
+        </select>
+        </div>
+    </td>
+    <td>
+        <label>Partition By: </label>
+        <button id="btnAll">All</button>
+    </td>
+    <td>
+        <button id="btnGen">Generation</button>
+    </td>
+    </tr>
+    <tr id="gene_selector" style="display:none"><td>
+        <label>LEF</label><br>
+        <input type="radio" name="genotype" value="+/-">+/-<br>
+        <input type="radio" name="genotype" value="-/-">-/-<br>
+        <input type="radio" name="genotype" value="WT">WT<br>
+    </td><td>
+        <label>RANKL</label><br>
+        <input type="radio" name="genotype" value="+/-">+/-<br>
+        <input type="radio" name="genotype" value="-/-">-/-<br>
+        <input type="radio" name="genotype" value="WT">WT<br>
+    </td><td>
+        <label>PTHrP</label><br>
+        <input type="radio" name="genotype" value="+/-">+/-<br>
+        <input type="radio" name="genotype" value="-/-">-/-<br>
+        <input type="radio" name="genotype" value="WT">WT<br>
+    </td></tr>
+</table>
+
+
+<div id="graph"></div>
+
+</body>
+</html>
