@@ -112,14 +112,14 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-<<<<<<< HEAD
+
 	'/Users/sindhuja/django-project/edit_colony/templates',
-	'/Users/sindhuja/django-project/viz/templates'
-=======
-	'/home/user/cove/COVE/edit_colony/templates',
-	'/home/user/cove/COVE/viz/templates',
-    '/home/user/cove/COVE/menu/templates'
->>>>>>> 15c16425ea536c5f625f8b97f46896e9d35efe14
+	'/Users/sindhuja/django-project/viz/templates',
+	'/Users/sindhuja/django-project/edit_colony/templates',
+	'/Users/sindhuja/django-project/viz/templates',
+    '/Users/sindhuja/django-project/menu/templates',
+    '/Users/sindhuja/django-project/breeding_calculator/templates',
+
 )
 
 INSTALLED_APPS = (
@@ -133,9 +133,11 @@ INSTALLED_APPS = (
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
+    'south',
     'twitter_bootstrap',
     'bootstrap_toolkit',
 	'mice_db',
+    'breeding_calculator',
 	'django_bootstrap_staticfiles',
 )
 

@@ -17,4 +17,5 @@ urlpatterns = patterns('',
 	url(r'^edit_colony/', include( 'edit_colony.urls')),
 	url(r'^viz/', include( 'viz.urls')),
     url(r'^menu/', include( 'menu.urls')),
+    url(r'^breeding_calculator/', include( 'breeding_calculator.urls')),
 )

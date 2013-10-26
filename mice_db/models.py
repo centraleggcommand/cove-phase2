@@ -26,6 +26,9 @@ class Mouse(models.Model):
 	genotype2 = models.CharField(max_length=10)
 	genotype3 = models.CharField(max_length=10)
 
+	def __unicode__(self):
+		return self.mouseId
+
 class Colony(models.Model):
 	colonyId = models.IntegerField(primary_key=True)
 	createdDate = models.DateField(auto_now_add=True)
