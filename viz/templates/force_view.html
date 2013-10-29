@@ -80,6 +80,27 @@ $(document).ready( function() {
         .node();
     d3.select("#selectColorGroup").on("change", handle_color);
 
+    FV.all_foci = function() {
+        return { 'x': FV.width/2, 'y': FV.height/2 };
+    }
+
+    FV.gen_foci = function(o) {
+        return { 'x': FV.genFoci[o.generation]['x'], 'y': FV.genFoci[o.generation]['y'] };
+    }
+
+    FV.gender_offset = function(o) {
+        var x = (o.gender == "F") ? -20 : 20;
+        return { 'x': x, 'y': 0};
+    }
+
+    FV.genotype_offset = function(o) {
+
+    }
+
+    // Set default function to use when clustering nodes.
+    FV.foci_fxn = FV.gen_foci;
+    FV.color_offset = FV.gender_offset;
+
     FV.delayInterval = 1500;
 
     FV.interval = setInterval( function() {
@@ -124,28 +145,31 @@ $(document).ready( function() {
 
     setTimeout( function() {
         FV.force.stop();
-    }, FV.delayInterval * FV.genFoci.length + 120000);
+        // Add labels for clusters
+        // Find approx midpoint of clusters
+        FV.clusterMidpoints = [];
+        var counter = 0;
+        for (var i=0; i < FV.layoutNodes.length; i++) {
+            if (FV.layoutNodes[i].generation == counter) {
+                var offset = FV.color_offset(FV.layoutNodes[i]);
+                FV.clusterMidpoints.push( {'x': FV.layoutNodes[i].x - offset.x, 'y': FV.layoutNodes[i].y - offset.y});
+                counter++;
+                if (counter == FV.genFoci.length) {
+                    break;
+                }
+            }
+        }
+        FV.svg.selectAll(".clusterLabel").data( FV.clusterMidpoints).enter()
+                .append("text")
+                .text( function(d,i) { return "Gen" + i; })
+                .attr("x", function(d) { return d.x; })
+                .attr("y", FV.genFoci[0].y -150)  //make y value the same for all labels
+                .attr("class","clusterLabel")
+                .style("text-anchor", "middle")
+                .style("fill", "#D3D3DD")
+                .style("opacity", "1");
 
-    FV.all_foci = function() {
-        return { 'x': FV.width/2, 'y': FV.height/2 };
-    }
-
-    FV.gen_foci = function(o) {
-        return { 'x': FV.genFoci[o.generation]['x'], 'y': FV.genFoci[o.generation]['y'] };
-    }
-
-    FV.gender_offset = function(o) {
-        var x = (o.gender == "F") ? -20 : 20;
-        return { 'x': x, 'y': 0};
-    }
-
-    FV.genotype_offset = function(o) {
-
-    }
-
-    // Set default function to use when clustering nodes.
-    FV.foci_fxn = FV.gen_foci;
-    FV.color_offset = FV.gender_offset;
+    }, FV.delayInterval * FV.genFoci.length + 40000);
 
     d3.select("#btnAll").on("click", function() {
         FV.foci_fxn = FV.all_foci;
@@ -166,23 +190,6 @@ $(document).ready( function() {
             })
         FV.force.resume();
     })
-
-    // Initialize
-    FV.svg.selectAll(".clusterLabel").data( FV.genFoci).enter()
-            .append("text")
-            .text(function(d,i) {
-                return "Generation " + i;
-            })
-            .attr("x", function(d) {
-                return d["x"];
-            })
-            .attr("y", function(d) {
-                return d["y"] - 150;
-            })
-            .attr("class","clusterLabel")
-            .style("text-anchor", "middle")
-            .style("fill", "#D3D3DD")
-            .style("opacity", "1");
 
     function get_id( d) {
         return d.mouseId;
