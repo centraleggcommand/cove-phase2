@@ -10,11 +10,11 @@ import os
 # USAGE:
 # From within mice_db dir, run "python ../manage.py shell"
 # Within interactive shell, run "from mice_db import populate"
-# Within interactive shell, run "populate.upload_csv(['colonyA'])
+# Within interactive shell, run "populate.upload_csv(['/mice_db/colonyC_ext'])
 
 def upload_csv( fileName):
 	curpath = os.path.abspath(os.curdir)
-	with open((os.path.join(curpath, fileName))) as csvfile:
+	with open(fileName) as csvfile:
 		mouseReader = csv.reader( csvfile)
 		# Obtain header with column names
 		columns = mouseReader.next()

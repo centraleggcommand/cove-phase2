@@ -8,7 +8,7 @@ class Mouse(models.Model):
 	mouseId = models.CharField(max_length=15, primary_key=True)
 	colonyId = models.ForeignKey('Colony', blank=True, null=True, on_delete=models.SET_NULL)
 	generation = models.IntegerField(default=0)
-	gender = models.CharField(max_length=1)
+	gender = models.CharField(max_length=5)
 	litter = models.IntegerField(default=0)
 	fatherId = models.CharField(max_length=15, blank=True)
 	motherId = models.CharField(max_length=15, blank=True)
