@@ -5,9 +5,6 @@
 <meta charset="utf-8">
 <style>
 
-.node {
-}
-
 </style>
 
 <body>
@@ -101,75 +98,48 @@ $(document).ready( function() {
     FV.foci_fxn = FV.gen_foci;
     FV.color_offset = FV.gender_offset;
 
-    FV.delayInterval = 1500;
+    FV.delayInterval = 2000;
 
+    FV.currGen = FV.miceGenData.pop();
+    FV.currGenClass = "gen" + FV.currGen[0].generation;
     FV.interval = setInterval( function() {
-        if (FV.miceGenData.length > 0) {
-            var currGen = FV.miceGenData.pop();
-            var currGenClass = "gen" + currGen[0].generation;
-            //Need to preserve object referenced by force layout so pushing instead of concat.
-            for (var i=0; i<currGen.length; i++) {
-                FV.layoutNodes.push(currGen[i]);
-            }
-            FV.force.start();
-            FV.svg.selectAll(".node").data(FV.layoutNodes, get_id)
-                .enter()
-                .append("circle")
-                .attr("cx", function(d) {
-                        var randomNum = Math.random();
-                        randomNum = (randomNum & 1 ? randomNum : -1 * randomNum);
-                        d.x = d.px = FV.genFoci[d.generation]['x'] + (100 * randomNum);
-                        return d.x;
-                })
-                .attr("cy", function(d) {
-                        var randomNum = Math.random();
-                        randomNum = randomNum & 1 ? randomNum : -1 * randomNum;
-                        d.y = d.py = FV.genFoci[d.generation]['y'] + (100 * randomNum);
-                        return d.y;
-                })
-                .classed("node", "true")
-                .classed(currGenClass, "true")
-                .attr("r", 2)
-                .style("stroke", "rgb(24,24,24)")
-                .style("stroke-width", "1.0px")
-                .style("fill", function(d, i) { return assign_color(d); })
-                .style("opacity", 0.1);
-            d3.selectAll("." + currGenClass).transition().delay( function(d,i) {return i*0.2;})
-                .duration(800)
-                .style("opacity","0.9");
+        if (FV.currGen.length == 0 && FV.miceGenData.length > 0) {
+            FV.currGen = FV.miceGenData.pop();
+            FV.currGenClass = "gen" + FV.currGen[0].generation;
+            //for (var i=0; i<currGen.length; i++) {
+            //    FV.layoutNodes.push(currGen[i]);
+            //}
+            //FV.force.start();
+            //FV.svg.selectAll(".node").data(FV.layoutNodes, get_id)
+            //    .enter()
+            //    .append("circle")
+            //    .attr("cx", function(d) {
+            //            var randomNum = Math.random();
+            //            randomNum = (randomNum & 1 ? randomNum : -1 * randomNum);
+            //            d.x = d.px = FV.genFoci[d.generation]['x'] + (100 * randomNum);
+            //            return d.x;
+            //    })
+            //    .attr("cy", function(d) {
+            //            var randomNum = Math.random();
+            //            randomNum = randomNum & 1 ? randomNum : -1 * randomNum;
+            //            d.y = d.py = FV.genFoci[d.generation]['y'] + (100 * randomNum);
+            //            return d.y;
+            //    })
+            //    .classed("node", "true")
+            //    .classed(currGenClass, "true")
+            //    .attr("r", 2)
+            //    .style("stroke", "rgb(24,24,24)")
+            //    .style("stroke-width", "1.0px")
+            //    .style("fill", function(d, i) { return assign_color(d); })
+            //    .style("opacity", 0.1);
+            //d3.selectAll("." + currGenClass).transition().delay( function(d,i) {return i*0.2;})
+            //    .duration(800)
+            //    .style("opacity","0.9");
         }
-        else {
+        else if (FV.miceGenData.length == 0) {
             clearInterval(FV.interval);
         }
     }, FV.delayInterval);
-
-    setTimeout( function() {
-        FV.force.stop();
-        // Add labels for clusters
-        // Find approx midpoint of clusters
-        FV.clusterMidpoints = [];
-        var counter = 0;
-        for (var i=0; i < FV.layoutNodes.length; i++) {
-            if (FV.layoutNodes[i].generation == counter) {
-                var offset = FV.color_offset(FV.layoutNodes[i]);
-                FV.clusterMidpoints.push( {'x': FV.layoutNodes[i].x - offset.x, 'y': FV.layoutNodes[i].y - offset.y});
-                counter++;
-                if (counter == FV.genFoci.length) {
-                    break;
-                }
-            }
-        }
-        FV.svg.selectAll(".clusterLabel").data( FV.clusterMidpoints).enter()
-                .append("text")
-                .text( function(d,i) { return "Gen" + i; })
-                .attr("x", function(d) { return d.x; })
-                .attr("y", FV.genFoci[0].y -150)  //make y value the same for all labels
-                .attr("class","clusterLabel")
-                .style("text-anchor", "middle")
-                .style("fill", "#D3D3DD")
-                .style("opacity", "1");
-
-    }, FV.delayInterval * FV.genFoci.length + 40000);
 
     d3.select("#btnAll").on("click", function() {
         FV.foci_fxn = FV.all_foci;
@@ -192,10 +162,55 @@ $(document).ready( function() {
     })
 
     function get_id( d) {
-        return d.mouseId;
+        if (d) { return d.mouseId; }
+    }
+
+    function add_arrows( node) {
+
     }
 
     function tick(e) {
+        if (FV.currGen.length == 0) { return; }
+        FV.layoutNodes.push(FV.currGen.pop());
+        FV.force.start();
+        FV.svg.selectAll(".node").data(FV.layoutNodes, get_id)
+            .enter()
+            .append("circle")
+            .attr("cx", function(d) {
+                    var randomNum = Math.random();
+                    randomNum = (randomNum & 1 ? randomNum : -1 * randomNum);
+                    d.x = d.px = FV.genFoci[d.generation]['x'] + (100 * randomNum);
+                    return d.x;
+            })
+            .attr("cy", function(d) {
+                    var randomNum = Math.random();
+                    randomNum = randomNum & 1 ? randomNum : -1 * randomNum;
+                    d.y = d.py = FV.genFoci[d.generation]['y'] + (100 * randomNum);
+                    return d.y;
+            })
+            .classed("node", "true")
+            .classed(FV.currGenClass, "true")
+            .attr("r", 3)
+            .style("stroke", "rgb(24,24,24)")
+            .style("stroke-width", "1.0px")
+            .style("fill", function(d, i) { return assign_color(d); })
+            .style("opacity", 0.1)
+            .on("mouseover", function() {
+                //undo any previous selection
+                d3.select(".hovered")
+                    .classed("hovered", false)
+                    .style("stroke", "rgb(24,24,24)")
+                    .style("stroke-width", "1.0px")
+                d3.select(this)
+                    .classed("hovered", true)
+                    .style( "stroke", "#66FF33")
+                    .style("stroke-width", "3px");
+                //add_arrows(this);
+            });
+        d3.selectAll("." + FV.currGenClass).transition().delay( function(d,i) {return i*0.2;})
+            .duration(800)
+            .style("opacity","1");
+
         // Push nodes toward their designated focus.
         var nodeSet = FV.svg.selectAll(".node");
         var k = 0.2 * e.alpha;
@@ -208,6 +223,37 @@ $(document).ready( function() {
         // Update drawn circle
         nodeSet.attr("cx", function(d) { return d.x; })
             .attr("cy", function(d) { return d.y; });
+
+        // Stop the simulation when cool enough and add labels
+        if (FV.miceGenData.length == 0 && (FV.currGen.length == 0) ) {
+            setTimeout( function() {
+                FV.force.stop();
+                // Add labels for clusters
+                // Find approx midpoint of clusters
+                FV.clusterMidpoints = [];
+                var counter = 0;
+                for (var i=0; i < FV.layoutNodes.length; i++) {
+                    if (FV.layoutNodes[i].generation == counter) {
+                        var offset = FV.color_offset(FV.layoutNodes[i]);
+                        FV.clusterMidpoints.push( {'x': FV.layoutNodes[i].x - offset.x, 'y': FV.layoutNodes[i].y - offset.y});
+                        counter++;
+                        if (counter == FV.genFoci.length) {
+                            break;
+                        }
+                    }
+                }
+                FV.svg.selectAll(".clusterLabel").data( FV.clusterMidpoints).enter()
+                        .append("text")
+                        .text( function(d,i) { return "Gen" + i; })
+                        .attr("x", function(d) { return d.x; })
+                        .attr("y", FV.genFoci[0].y -150)  //make y value the same for all labels
+                        .attr("class","clusterLabel")
+                        .style("text-anchor", "middle")
+                        .style("fill", "#D3D3DD")
+                        .style("opacity", "1");
+
+            }, 1000);
+        }
     }
 
 });
