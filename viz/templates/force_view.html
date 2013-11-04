@@ -5,10 +5,6 @@
 <meta charset="utf-8">
 <style>
 
-.node {
-  stroke-width: 1.5px;
-}
-
 </style>
 
 <body>
@@ -28,14 +24,39 @@ function initialize() {
         FV.miceGenData.push( FV.allMice[i]);
     }
 
-    FV.width = 550,
+    FV.width = 950,
     FV.height = 450;
     FV.fill = d3.scale.category10();
     FV.genFoci = [];
-    var segmentSize = FV.width/FV.allMice.length;
+
+    //=== Create circle boundaries for each generation.
+
     for (var i=0; i < FV.allMice.length; i++) {
-        // Calc the midpoint of a segment
-        FV.genFoci[i] = ((i+1) * segmentSize) - segmentSize/2;
+        // Calculate circle size based on number of nodes
+        var totalArea = 64* FV.allMice[i].length;
+        FV.genFoci[i] = {"radius": Math.sqrt(totalArea) };
+        //var totalArea = d.reduce( function( prevVal, currVal, i, array) {
+        //    return prevVal + Math.pow(currVal.numChildren, 2) * Math.PI;
+        //}, 0)
+    }
+    // Calculate proportion of width needed by each generation
+    var totSpan = FV.genFoci.reduce( function( prev, curr, i, array) {
+        return prev + curr.radius * 2;
+    }, 0)
+    var maxRadius = FV.genFoci.reduce( function( prev, curr, i, array) {
+        return (prev < curr.radius) ? curr.radius : prev;
+    }, 0)
+    FV.x_scale = d3.scale.linear().domain([0, totSpan]).range([0, FV.width]);
+    FV.y_scale = d3.scale.linear().domain([0, maxRadius*2]).range([0, FV.height]);
+    FV.fit_scale = (FV.x_scale(maxRadius) < FV.y_scale(maxRadius)) ? FV.x_scale : FV.y_scale;
+    // Assign foci values
+    var runningSum = 0; // Keep track of offset from left of graph
+    for (var i=0; i < FV.genFoci.length; i++) {
+        var scaledRadius = FV.fit_scale(FV.genFoci[i].radius);
+        FV.genFoci[i].radius = scaledRadius;
+        FV.genFoci[i]['x'] = runningSum + scaledRadius;
+        FV.genFoci[i]['y'] = FV.height/2;
+        runningSum += (scaledRadius * 2);
     }
 }
 
@@ -68,6 +89,8 @@ $(document).ready( function() {
     FV.force = d3.layout.force()
             .nodes( FV.layoutNodes )// Show only root generation then add others incrementally.
             .size([FV.width, FV.height])
+            .charge(-10)
+            .gravity(0)
             .on("tick", tick)
             .start();
 
@@ -75,90 +98,158 @@ $(document).ready( function() {
         .attr("width", FV.width)
         .attr("height", FV.height);
 
+    FV.svg.style("opacity", "0.1")
+        .transition()
+        .duration(800)
+        .style("opacity","1");
+
     FV.sel = d3.select("#selectColorGroup")
         .node();
     d3.select("#selectColorGroup").on("change", handle_color);
 
-    FV.svg.style("opacity", 1e-6)
-        .transition()
-        .duration(1000)
-        .style("opacity", 1);
-
-    FV.interval = setInterval( function() {
-        if (FV.miceGenData.length > 0) {
-            var currGen = FV.miceGenData.pop();
-            var currGenClass = "gen" + currGen[0].generation;
-            //Need to preserve object referenced by force layout so pushing instead of concat.
-            for (var i=0; i<currGen.length; i++) {
-                FV.layoutNodes.push(currGen[i]);
-            }
-            FV.force.start();
-            FV.svg.selectAll(".node").data(FV.layoutNodes, get_id)
-                .enter()
-                .append("circle")
-                .attr("cx", function(d) { return d.x; })
-                .attr("cy", function(d) { return d.y; })
-                .classed("node", "true")
-                .classed(currGenClass, "true")
-                .attr("r", 4)
-                .style("fill", function(d, i) { return assign_color(d); })
-                .style("opacity", "0.1")
-                .call(FV.force.drag);
-            d3.selectAll("." + currGenClass).transition().delay( function(d,i) {return i*0.2;})
-                .duration(800)
-                .style("opacity","0.9");
-        }
-        else {
-            clearInterval(FV.interval);
-        }
-    }, 1500);
-
-    FV.all_foci = function(o) {
-        return { 'x': FV.width/2, 'y': FV.height/2 };
+    FV.all_foci = function() {
+        return { 'x': FV.width/2, 'y': FV.height/2 , 'radius': FV.height/2};
     }
 
-    FV.gen_foci = function(o) {
-        return { 'x': FV.genFoci[o.generation], 'y': FV.height/2 };
+    FV.gen_foci = function(d) {
+        return { 'x': FV.genFoci[d.generation]['x'],
+                 'y': FV.genFoci[d.generation]['y'],
+                 'radius': FV.genFoci[d.generation]['radius']};
     }
 
-    FV.gender_offset = function(o) {
-        return (o.gender == "F") ? -20 : 20;
+    FV.gender_offset = function(d) {
+        var x = (d.gender == "F") ? -20 : 20;
+        return { 'x': x, 'y': 0};
     }
 
-    FV.genotype_offset = function(o) {
+    FV.genotype_offset = function(d) {
 
     }
 
     // Set default function to use when clustering nodes.
-    FV.foci_fxn = FV.all_foci;
+    FV.foci_fxn = FV.gen_foci;
     FV.color_offset = FV.gender_offset;
+
+    FV.delayInterval = 1500;
+
+    FV.svg.selectAll(".clusterBoundary").data( FV.genFoci).enter()
+            .append("circle")
+            .attr("cx", function (d,i) { return d.x; })
+            .attr("cy", function (d,i) { return d.y; })
+            .attr("r", function (d,i) { return d.radius; })
+            .style("stroke", "rgb(192,192,192)")
+            .style("stroke-width", "1.0px")
+            .style("fill", "rgba(192,192,192,0.2)");
+
+    // Create labels for previous generation, positioned at the foci.
+    FV.svg.selectAll(".clusterLabel").data( FV.genFoci ).enter()
+            .append("text")
+            .text( function (d,i) { return "Gen" + i; } )
+            .attr("x", function(d) { return d.x; })
+            .attr("y", FV.genFoci[0].y -150)  //make y value the same for all labels
+            .attr("class","clusterLabel")
+            .style("text-anchor", "middle")
+            .style("fill", "rgb(100,100,100)")
+            .style("opacity", "1");
+
+    FV.currGen = [];
+    FV.interval = setInterval( function() {
+        if (FV.currGen.length == 0 && FV.miceGenData.length > 0) {
+            FV.currGen = FV.miceGenData.pop();
+        }
+        else if (FV.miceGenData.length == 0) {
+            clearInterval(FV.interval);
+        }
+    }, FV.delayInterval);
 
     d3.select("#btnAll").on("click", function() {
         FV.foci_fxn = FV.all_foci;
+        d3.selectAll(".clusterLabel")
+            .transition()
+            .style("opacity", 1e-6)
+            .attr("x", FV.foci_fxn()["x"]);
         FV.force.resume();
     })
 
     d3.select("#btnGen").on("click", function() {
         FV.foci_fxn = FV.gen_foci;
+        d3.selectAll(".clusterLabel")
+            .transition()
+            .style("opacity","1")
+            .attr("x", function(d) {
+                return d["x"];
+            })
         FV.force.resume();
     })
 
     function get_id( d) {
-        return d.mouseId;
+        if (d) { return d.mouseId; }
     }
+
 
     function tick(e) {
         // Push nodes toward their designated focus.
         var nodeSet = FV.svg.selectAll(".node");
-        var k = 0.05 * e.alpha;
-        nodeSet.each(function(o, i) {
-            var target = FV.foci_fxn(o);
-            o.x += (target['x'] + FV.color_offset(o) - o.x) * k;
-            o.y += (target['y'] - o.y) * k;
-            })
+        var k = 0.4 * e.alpha;
+        nodeSet.each(function(d, i) {
+            var target = FV.foci_fxn(d);
+            var offset = FV.color_offset(d);
+            // if node is already within boundary, deflect
+            var distPrev = Math.sqrt( Math.pow(target.x - d.px, 2) +
+                                      Math.pow(target.y - d.py, 2) );
+            var distCurr = Math.sqrt( Math.pow(target.x - d.x, 2) +
+                                      Math.pow(target.y - d.y, 2) );
+            if( (distPrev <= target.radius) && (distCurr > target.radius) ) {
+                d.x = d.px + (target.x + offset.x - d.x) * k;
+                d.y = d.py + (target.y + offset.y - d.y) * k;
+            }
+            else {
+                d.x += (target.x + offset.x - d.x) * k;
+                d.y += (target.y + offset.y - d.y) * k;
+            }
+        })
         // Update drawn circle
         nodeSet.attr("cx", function(d) { return d.x; })
-            .attr("cy", function(d) { return d.y; });
+                .attr("cy", function(d) { return d.y; });
+
+        if (FV.currGen.length == 0) { return; }
+        for (var i=0; i<10 && FV.currGen.length > 0; i++) {
+            FV.layoutNodes.push(FV.currGen.pop());
+        }
+        FV.force.start();
+        FV.svg.selectAll(".node").data(FV.layoutNodes, get_id)
+            .enter()
+            .append("circle")
+            .attr("cx", function(d) {
+                    var randomNum = Math.random();
+                    randomNum = (randomNum & 1 ? randomNum : -1 * randomNum);
+                    d.x = d.px = FV.foci_fxn(d)['x'] + (50 * randomNum);
+                    return d.x;
+            })
+            .attr("cy", function(d) {
+                    var randomNum = Math.random();
+                    randomNum = randomNum & 1 ? randomNum : -1 * randomNum;
+                    d.y = d.py = FV.foci_fxn(d)['y'] + (50 * randomNum);
+                    return d.y;
+            })
+            .classed("node", "true")
+            .attr("r", 4)
+            .style("stroke", "rgb(24,24,24)")
+            .style("stroke-width", "1.0px")
+            .style("fill", function(d, i) { return assign_color(d); })
+            .on("mouseover", function() {
+                //undo any previous selection
+                d3.select(".hovered")
+                    .classed("hovered", false)
+                    .style("stroke", "rgb(24,24,24)")
+                    .style("stroke-width", "1.0px")
+                d3.select(this)
+                    .classed("hovered", true)
+                    .style( "stroke", "#66FF33")
+                    .style("stroke-width", "3px");
+                //add_arrows(this);
+            });
+
     }
 
 });
@@ -184,7 +275,7 @@ $(document).ready( function() {
     </td>
     </tr>
     <tr id="gene_selector" style="display:none"><td>
-        <label>LEF</label><br>
+        <label>LEF1</label><br>
         <input type="radio" name="genotype" value="+/-">+/-<br>
         <input type="radio" name="genotype" value="-/-">-/-<br>
         <input type="radio" name="genotype" value="WT">WT<br>
@@ -200,7 +291,7 @@ $(document).ready( function() {
         <input type="radio" name="genotype" value="WT">WT<br>
     </td></tr>
 </table>
-
+</div>
 
 <div id="graph"></div>
 
