@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<!-- Reference http://bl.ocks.org/mbostock/1021841 -->
+
+<meta charset="utf-8">
+<style>
+
+</style>
+
+<body>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.6.min.js"></script>
+
+<script>
+// The var FV is a container for global data to be referenced explicitly.
+var FV = {};
+
+// Assign values to the FV.fit_scale function and FV.genFoci positions
+function set_scale_foci( nodeLayouts) {
+    // Determine the horizontal spacing for each generation based on root node radius.
+    for (var i=0; i < nodeLayouts.length; i++) {
+        var currGen = nodeLayouts[i];
+        for (var j=0; j < currGen.length; j++) {
+            if (currGen[j].depth == 0) {
+                FV.genFoci[i] = {'radius': currGen[j].r,
+                    'x': currGen[j].x,
+                    'y': currGen[j].y};
+                break;
+            }
+        }
+    }
+
+    // Add diameter of each generation to scale width.
+    var totSpan = FV.genFoci.reduce( function( prev, curr, i, array) {
+        return prev + curr.radius * 2;
+    }, 0)
+    // Get max radius to scale the height.
+    var maxRadius = FV.genFoci.reduce( function( prev, curr, i, array) {
+        return (prev < curr.radius) ? curr.radius : prev;
+    }, 0)
+
+    // Create scale function
+    var x_scale = d3.scale.linear().domain([0, totSpan]).range([0, FV.width]);
+    var y_scale = d3.scale.linear().domain([0, maxRadius*2]).range([0, FV.height]);
+    FV.fit_scale = (x_scale(maxRadius) < y_scale(maxRadius)) ? x_scale : y_scale;
+
+    // Assign foci values
+    var runningSum = 0; // Keep track of offset from left of graph
+    for (var i=0; i < FV.genFoci.length; i++) {
+        var scaledRadius = FV.fit_scale(FV.genFoci[i].radius);
+        FV.genFoci[i].radius = scaledRadius;
+        FV.genFoci[i]['dx'] = runningSum + scaledRadius - FV.genFoci[i].x;
+        FV.genFoci[i]['dy'] = 0;
+        runningSum += (scaledRadius * 2);
+    }
+
+}
+
+function initialize() {
+    FV.allMice = JSON.parse( '{{ jsonAllMice | safe}}');
+    //The allMice object is an array of arrays for each generation, and element a json object.
+    //Convert to format for hierarchical packing (1 level for all objects of a generation).
+    //Use separate layout for each generation.
+    FV.miceGenData = [];
+    for (var i=0; i < FV.allMice.length; i++) {
+        FV.miceGenData.push( {'name': 'Gen' + i, 'children': FV.allMice[i]});
+    }
+
+    FV.width = 950,
+    FV.height = 450;
+
+    FV.genFoci = [];
+    // Estimate boundary circle of each generation to assign layout size
+    for (var i=0; i < FV.allMice.length; i++) {
+        // Calculate circle size based on number of nodes
+        var totalArea = 64* FV.allMice[i].length;
+        FV.genFoci[i] = {"estimate": Math.sqrt(totalArea) };
+    }
+
+    // Use the circle packing layout to calculate node positions for each generation.
+    var nodeLayouts = [];
+    for (var i=0; i < FV.miceGenData.length; i++) {
+        nodeLayouts.push( d3.layout.pack().size([FV.genFoci[i].estimate * 2, FV.height]).padding(10)
+                .value( function(d) { return 1; })
+                .nodes( FV.miceGenData[i]));
+    }
+
+    set_scale_foci( nodeLayouts);
+
+    return nodeLayouts;
+}
+
+function handle_color() {
+    var selected = this.value;
+    if (selected == "genotype") {
+        d3.select("#gene_selector").style("display","inline")
+    }
+    else {
+        d3.select("#gene_selector").style("display","none")
+    }
+}
+
+function assign_color( d) {
+    var grp = FV.sel.options[FV.sel.selectedIndex].value;
+    if (grp == "gender") {
+        if(d.gender == "F") {
+            return "#FF7575";
+        }
+        else if (d.gender == "M") {
+            return "#3366FF";
+        }
+        else return "#C0C0C0";
+    }
+}
+
+function create_initial_view( initNodes) {
+    FV.svg = d3.select("#graph").append("svg")
+            .attr("width", FV.width)
+            .attr("height", FV.height);
+
+    FV.svg.style("opacity", "0.1")
+            .transition()
+            .duration(800)
+            .style("opacity","1");
+
+    FV.sel = d3.select("#selectColorGroup")
+            .node();
+    d3.select("#selectColorGroup").on("change", handle_color);
+
+    for (var i=0; i < initNodes.length; i++) {
+        var genGrp = FV.svg.append("g")
+                .attr("id","g" + i)
+                .attr("transform", "translate(" + FV.genFoci[i].dx + ", " + FV.genFoci[i].dy + ")" );
+        genGrp.selectAll(".gen" + i).data(initNodes[i])
+                .enter()
+                .append("circle")
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .attr("r", function(d) { return FV.fit_scale(d.r); })
+                .classed("node", "true")
+                .classed("gen" + i, "true")
+                .style("stroke", "rgb(150,150,150)")
+                .style("stroke-width", "1.0px")
+                .style("fill", function(d, i) {
+                    if (d.depth == 0) { return "rgba(255,255,255,0)"; }
+                    else { return assign_color(d); }
+                })
+                .on("mouseover", function() {
+                    //undo any previous selection
+                    d3.select(".hovered")
+                            .classed("hovered", false)
+                            .style("stroke", "rgb(150, 150, 150)")
+                            .style("stroke-width", "1.0px")
+                    d3.select(this)
+                            .classed("hovered", true)
+                            .style( "stroke", "#66FF33")
+                            .style("stroke-width", "3px");
+                });
+    }
+
+}
+
+// Format mice data to have hierarchy of generation then gender type
+function create_gender_format() {
+    var genderData = [];
+    for (var i=0; i < FV.allMice.length; i++) {
+        // Create additional grouping by gender
+        var genderGroup = [];
+        genderGroup.push( {'name': 'female',
+                           'children': FV.allMice[i].filter( function( elem) { return elem.gender == "F"; })
+        });
+        genderGroup.push( {'name': 'male',
+            'children': FV.allMice[i].filter( function( elem) { return elem.gender == "M"; })
+        });
+        genderGroup.push( {'name': 'unknown',
+            'children': FV.allMice[i].filter( function( elem) { return (elem.gender != "M") && (elem.gender != "F"); })
+        });
+        genderData.push( {'name': 'Gen' + i, 'children': genderGroup});
+    }
+    return genderData;
+}
+
+// Take an array of objects, with each object representing a generation, and having a children field.
+// Return an array of an array of objects that have data for position and size.
+function layout_generations( genArray) {
+    // Use the circle packing layout to calculate node positions for each generation.
+    var nodeLayouts = [];
+    for (var i=0; i < genArray.length; i++) {
+        // The size for packing is currently based on last boundary circle size
+        nodeLayouts.push( d3.layout.pack().size([FV.genFoci[i].radius * 2, FV.height]).padding(10)
+                .value( function(d) { return 1; })
+                .nodes( genArray[i]));
+    }
+    return nodeLayouts;
+}
+
+function get_id( d) {
+        if (d) { return d.mouseId; }
+    }
+
+// Update position of circles
+function update_view( nodeLayouts) {
+    set_scale_foci( nodeLayouts);
+    // Update the translation for each generation based on any change in genFoci and radii
+    for (var i=0; i < nodeLayouts.length; i++) {
+        d3.select("#g" + i).attr("transform","translate(" + FV.genFoci[i].dx + ", " + FV.genFoci[i].dy + ")" );
+    }
+    // Go through each generation in nodeLayout
+    for (var i=0; i < nodeLayouts.length; i++) {
+        d3.selectAll(".gen" + i).data(nodeLayouts[i], get_id)
+                .transition().duration(1000)
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .attr("r", function(d) { return FV.fit_scale(d.r); });
+    }
+}
+
+$(document).ready( function() {
+    create_initial_view( initialize() );
+    update_view( layout_generations( create_gender_format() ));
+
+}); //end document ready
+
+</script>
+
+<div id="filters">
+<table cellspacing="10">
+    <tr><td>
+        <label>Color By: </label>
+        <select id="selectColorGroup">
+            <option value="gender" selected="true">Gender</option>
+            <option value="genotype">Genotype</option>
+        </select>
+        </div>
+    </td>
+    <td>
+        <label>Partition By: </label>
+        <button id="btnAll">All</button>
+    </td>
+    <td>
+        <button id="btnGen">Generation</button>
+    </td>
+    </tr>
+    <tr id="gene_selector" style="display:none"><td>
+        <label>LEF1</label><br>
+        <input type="radio" name="genotype" value="+/-">+/-<br>
+        <input type="radio" name="genotype" value="-/-">-/-<br>
+        <input type="radio" name="genotype" value="WT">WT<br>
+    </td><td>
+        <label>RANKL</label><br>
+        <input type="radio" name="genotype" value="+/-">+/-<br>
+        <input type="radio" name="genotype" value="-/-">-/-<br>
+        <input type="radio" name="genotype" value="WT">WT<br>
+    </td><td>
+        <label>PTHrP</label><br>
+        <input type="radio" name="genotype" value="+/-">+/-<br>
+        <input type="radio" name="genotype" value="-/-">-/-<br>
+        <input type="radio" name="genotype" value="WT">WT<br>
+    </td></tr>
+</table>
+</div>
+
+<div id="graph"></div>
+
+</body>
+</html>

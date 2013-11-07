@@ -44,3 +44,10 @@ def draw_force(request):
         jsonAllMice = vizd.all_mice_gen()
         contextVars = {'jsonAllMice': jsonAllMice}
         return render(request, 'force_view.html', contextVars)
+
+def draw_pack(request):
+    if request.method == "GET":
+        # Need data of all mice in json format
+        jsonAllMice = vizd.all_mice_gen()
+        contextVars = {'jsonAllMice': jsonAllMice}
+        return render(request, 'pack_view.html', contextVars)
