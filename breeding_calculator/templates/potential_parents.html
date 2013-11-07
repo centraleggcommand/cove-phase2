@@ -1,0 +1,20 @@
+<p>
+	The potential parents are the following:
+</p>
+{{p1}}
+{{p2}}
+
+{% if p1 and p2 %}
+    <ul>
+    	<p>Parent one </p>
+        {% for parent in p1 %}
+        {{ parent }}
+        {% endfor %}
+        <p> parent two</p>
+        {% for parent in p2 %}
+        <l1> {{ parent }}</li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No mouse matched your search criteria.</p>
+{% endif %}

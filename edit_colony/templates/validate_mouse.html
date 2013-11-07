@@ -1,0 +1,14 @@
+{% extends "mouse.html" %}
+
+{% block addedFields %}
+<p>
+	<label for="id_tod">Date of birth:</label>
+	<input type="text" id="id_dob">
+</p>
+{% endblock %}
+
+{% block submit %}
+<input type="submit" value="Submit" />
+
+<input type="button" value="Cancel" />
+{% endblock %}

@@ -51,11 +51,11 @@
 <body>
 
 <link rel="stylesheet" type="text/css" href="/static/form.css">
-<form action={{ submitAction }} method="post">{% csrf_token %}
-{% if header %}
+<form action={{ submitAction }} method="post">
+{% csrf_token %}
 
-<p class="caption">{{ header }}</p>
-{% endif %}
+
+
 <div class="editField">
 	<p>
 		<label class="fielderror">{{ form.mouseId.errors }}</label>
