@@ -59,13 +59,51 @@ function set_scale_foci( nodeLayouts) {
 
 function initialize() {
     FV.allMice = JSON.parse( '{{ jsonAllMice | safe}}');
-    //The allMice object is an array of arrays for each generation, and element a json object.
+    //The allMice object is an array of arrays for generation data, and element a json object.
     //Convert to format for hierarchical packing (1 level for all objects of a generation).
     //Use separate layout for each generation.
     FV.miceGenData = [];
     for (var i=0; i < FV.allMice.length; i++) {
         FV.miceGenData.push( {'name': 'Gen' + i, 'children': FV.allMice[i]});
     }
+
+    // Mice data format needs to support additional hierarchy such as by gender and litter.
+    // Create an object with a field that supplies ordered array of functions to apply.
+    FV.formattedData = { // format_fxns are functions that take one parameter - array of raw data objects
+                        'format_fxns': [],
+                        'miceData': FV.miceGenData,
+                        'get_hierarchy': function() {
+                            // Recursive helper fxn
+                            var that = this;
+                            var applyFormat = function( currLevel, format_index) {
+                                var innerHierarchy = [];
+                                for (var ci=0; ci < currLevel.length; ci++) {
+                                    var formattedGroup =
+                                        {'name': currLevel[ci].name,
+                                         'children': that.format_fxns[format_index]( currLevel[ci].children) };
+                                    // A depth first approach in recursion, in which the format_index
+                                    // corresponds to depth
+                                    if ( (format_index + 1) < that.format_fxns.length) {
+                                        // Overwrite children array with grouped version
+                                        formattedGroup.children = applyFormat( formattedGroup.children, format_index + 1);
+                                    }
+                                    innerHierarchy.push( formattedGroup);
+                                }
+                                return innerHierarchy;
+                            };
+                            // Recursively apply format
+                            return applyFormat( this.miceData, 0);
+                        },
+                        // The id parameter needs to correlate with DOM checkbox that uses the 'fmt' function
+                        'add_format': function( id, fmt) {
+                            // Attach the id as an attribute belonging to the fmt function object
+                            fmt.id = id;
+                            this.format_fxns.push( fmt);
+                        },
+                        'remove_format': function( id) {
+                            this.format_fxns = this.format_fxns.filter( function( elem) { return elem.id != id; });
+                        }
+    };
 
     FV.width = 950,
     FV.height = 450;
@@ -101,8 +139,16 @@ function handle_color() {
     }
 }
 
+function handle_group_litter() {
+    if (this.checked == "true") {
+
+    }
+
+}
+
 function assign_color( d) {
-    var grp = FV.sel.options[FV.sel.selectedIndex].value;
+    var selectedColor = d3.select("#selectColorGroup").node();
+    var grp = selectedColor.options[selectedColor.selectedIndex].value;
     if (grp == "gender") {
         if(d.gender == "F") {
             return "#FF7575";
@@ -124,9 +170,9 @@ function create_initial_view( initNodes) {
             .duration(800)
             .style("opacity","1");
 
-    FV.sel = d3.select("#selectColorGroup")
-            .node();
+    // Add event handlers to various view options
     d3.select("#selectColorGroup").on("change", handle_color);
+    d3.select("#litterCheck").on("click", handle_group_litter);
 
     for (var i=0; i < initNodes.length; i++) {
         var genGrp = FV.svg.append("g")
@@ -162,23 +208,44 @@ function create_initial_view( initNodes) {
 }
 
 // Format mice data to have hierarchy of generation then gender type
-function create_gender_format() {
-    var genderData = [];
-    for (var i=0; i < FV.allMice.length; i++) {
-        // Create additional grouping by gender
-        var genderGroup = [];
-        genderGroup.push( {'name': 'female',
-                           'children': FV.allMice[i].filter( function( elem) { return elem.gender == "F"; })
-        });
-        genderGroup.push( {'name': 'male',
-            'children': FV.allMice[i].filter( function( elem) { return elem.gender == "M"; })
-        });
-        genderGroup.push( {'name': 'unknown',
-            'children': FV.allMice[i].filter( function( elem) { return (elem.gender != "M") && (elem.gender != "F"); })
-        });
-        genderData.push( {'name': 'Gen' + i, 'children': genderGroup});
+function create_gender_format( rawNodes) {
+    // Create additional grouping by gender
+    var genderGroup = [];
+    genderGroup.push( {'name': 'female',
+                       'children': rawNodes.filter( function( elem) { return elem.gender == "F"; })
+    });
+    genderGroup.push( {'name': 'male',
+        'children': rawNodes.filter( function( elem) { return elem.gender == "M"; })
+    });
+    genderGroup.push( {'name': 'unknown',
+        'children': rawNodes.filter( function( elem) { return (elem.gender != "M") && (elem.gender != "F"); })
+    });
+    return genderGroup;
+}
+
+// Format data to have hierarchy of litters unique by motherID, fatherID, and litter number
+function create_litter_format( rawNodes) {
+    var litterGroup = [];
+    // Hold members of each distinct litter in a separate array
+    var distinctLitters = {};
+    for (var i=0; i < rawNodes.length; i++) {
+        var litterId = rawNodes[i].motherId + rawNodes[i].fatherId + rawNodes[i].litter;
+        if (distinctLitters[litterId]) {
+            distinctLitters[litterId].push(rawNodes[i]);
+        }
+        else {
+            distinctLitters[litterId] = [rawNodes[i]];
+        }
     }
-    return genderData;
+    // Create hierarchy format
+    var attrib;
+    for (attrib in distinctLitters) {
+        // Make sure the attribute is not inherited
+        if (distinctLitters.hasOwnProperty(attrib) ) {
+            litterGroup.push( {'name': attrib, 'children': distinctLitters[attrib]} );
+        }
+    }
+    return litterGroup;
 }
 
 // Take an array of objects, with each object representing a generation, and having a children field.
@@ -218,28 +285,35 @@ function update_view( nodeLayouts) {
 
 $(document).ready( function() {
     create_initial_view( initialize() );
-    update_view( layout_generations( create_gender_format() ));
+    FV.formattedData.add_format( "genderCheck", create_gender_format);
+    update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
 
 }); //end document ready
 
 </script>
 
-<div id="filters">
+<div id="filters" style="background-color: #EFEFFA">
 <table cellspacing="10">
     <tr><td>
-        <label>Color By: </label>
+        <label><b>Color By: </b></label>
         <select id="selectColorGroup">
             <option value="gender" selected="true">Gender</option>
+            <option value="age">Age</option>
             <option value="genotype">Genotype</option>
         </select>
-        </div>
     </td>
     <td>
-        <label>Partition By: </label>
-        <button id="btnAll">All</button>
+        <label><b>Circle Size By: </b></label>
+        <select id="selectSizeGroup">
+            <option value="children">Number of children</option>
+        </select>
     </td>
     <td>
-        <button id="btnGen">Generation</button>
+        <label><b>Group By: </b></label>
+        <input type="checkbox" id="genderCheck" value="gender" checked="true">Gender
+    </td>
+    <td>
+        <input type="checkbox" id="litterCheck" value="litter">Litter
     </td>
     </tr>
     <tr id="gene_selector" style="display:none"><td>
