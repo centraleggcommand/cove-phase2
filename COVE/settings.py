@@ -119,6 +119,7 @@ TEMPLATE_DIRS = (
 	'/Users/sindhuja/django-project/viz/templates',
     '/Users/sindhuja/django-project/menu/templates',
     '/Users/sindhuja/django-project/breeding_calculator/templates',
+    '/Users/sindhuja/django-project/registrations/templates',
 
 )
 
@@ -138,6 +139,7 @@ INSTALLED_APPS = (
     'bootstrap_toolkit',
 	'mice_db',
     'breeding_calculator',
+    'registrations',
 	'django_bootstrap_staticfiles',
 )
 

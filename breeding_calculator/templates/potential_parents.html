@@ -1,18 +1,20 @@
 <p>
-	The potential parents are the following:
+	Potential parents are:
+           
 </p>
-{{p1}}
-{{p2}}
+
 
 {% if p1 and p2 %}
     <ul>
     	<p>Parent one </p>
-        {% for parent in p1 %}
-        {{ parent }}
+        {% for genotype,trait in p1.items %}        
+        {{ genotype}}
+        {{trait}}         
         {% endfor %}
         <p> parent two</p>
-        {% for parent in p2 %}
-        <l1> {{ parent }}</li>
+        {% for genotype,trait in p2.items %}        
+        {{ genotype}}
+        {{trait}}        
         {% endfor %}
     </ul>
 {% else %}

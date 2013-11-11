@@ -2,7 +2,6 @@ from django import forms
 from django.forms.extras.widgets import SelectDateWidget
 GENE_CHOICES = ('LEF1', 'RANKL', 'PTHrP')
 
-
 class GenotypeInputForm(forms.Form):
 	genotype1=forms.CharField(required=True)
 	trait1=forms.CharField(required=True)
