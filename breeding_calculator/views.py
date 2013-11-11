@@ -19,10 +19,12 @@ def determine_parent_genotype(cd):
 
 	required_parent_type_one = []
 	required_parent_type_two = []
+	required_mouse =[]
 
 	if cd['genotype1']:
 		trait_one = [list(cd['trait1'])[0] + '/' + trait for trait in ['+','-']]
 		trait_two = [trait +  '/' + list(cd['trait1'])[-1] for trait in ['+','-']]
+		required_mouse.append(cd['genotype1']+':'+cd['trait1'])
 	else:
 		cd['genotype1'] = 'LEF1'
 		trait_one = [trait for trait in ['+/+','+/-','-/-','-/+']]
@@ -32,8 +34,9 @@ def determine_parent_genotype(cd):
 
 
 	if cd['genotype2']:
-		trait_one = [list(cd['trait1'])[0] + '/' + trait for trait in ['+','-']]
-		trait_two = [trait +  '/' + list(cd['trait1'])[-1] for trait in ['+','-']]
+		trait_one = [list(cd['trait2'])[0] + '/' + trait for trait in ['+','-']]
+		trait_two = [trait +  '/' + list(cd['trait2'])[-1] for trait in ['+','-']]
+		required_mouse.append(cd['genotype2']+':'+cd['trait2'])
 	else:
 		cd['genotype2'] = 'RANKL'
 		trait_one = [trait for trait in ['+/+','+/-','-/-','-/+']]
@@ -43,16 +46,18 @@ def determine_parent_genotype(cd):
 
 
 	if cd['genotype3']:
-		trait_one = [list(cd['trait1'])[0] + '/' + trait for trait in ['+','-']]
-		trait_two = [trait +  '/' + list(cd['trait1'])[-1] for trait in ['+','-']]
+		trait_one = [list(cd['trait3'])[0] + '/' + trait for trait in ['+','-']]
+		trait_two = [trait +  '/' + list(cd['trait3'])[-1] for trait in ['+','-']]
+		required_mouse.append(cd['genotype3']+':'+cd['trait3'])
 	else:
 		cd['genotype3'] = 'PTHrP'
 		trait_one = [trait for trait in ['+/+','+/-','-/-','-/+']]
 		trait_two = [trait for trait in ['+/+','+/-','-/-','-/+']]
 	required_parent_type_one.append((cd['genotype3'], trait_one))
 	required_parent_type_two.append((cd['genotype3'], trait_two))
-	#print required_parent_type_one,required_parent_type_two
-	return required_parent_type_one,required_parent_type_two
+	print "Type One :  ", required_parent_type_one,"\n\n\n", "Type Two: ",required_parent_type_two,"\n\n\n"
+	print "\n\n", "Target:  ", required_mouse,"\n\n\n\n",required_parent_type_one + required_parent_type_two
+	return required_mouse, required_parent_type_one,required_parent_type_two
 
 def retrieve_parents(required_parent_type_one,required_parent_type_two):
 	""" This method retrieves the set of mice from the database which can be potential parents.
@@ -115,17 +120,31 @@ def retrieve_parents(required_parent_type_one,required_parent_type_two):
 				mothers_two.append((mice[0],mouse['mouseId']))
 
 
-	#print fathers_one,"\n\n",mothers_one,"\n\n",fathers_two,"\n\n",mothers_two
+	print "Fathers of type one:  ", fathers_one,"\n\n","Mothers of type one:  ", mothers_one,"\n\n"
+	print "Fathers of type two:  ",fathers_two,"\n\n","Mothers of type two:   ", mothers_two,"\n\n"
 	return fathers_one,mothers_one,fathers_two,mothers_two
 
 	
 
-def breeding_calculator(f1,m1,f2,m2,cd):
-	print f1,"\n\n",m1
+def compute_probability(f1,m1,f2,m2,required_mouse):
+	result = []
 	for father in f1:
-		for mother in m1:
+		for mother in m1 + m2:
+			p = 1
+			for trait in required_mouse:
+				gene,genotype = trait.split(':')[0],trait.split(':')[1]
+				f = dict([(val.split(':')[0],val.split(':')[1]) for val in father[0]])[gene].split('/')
+				m = dict([(val.split(':')[0],val.split(':')[1]) for val in mother[0]])[gene].split('/')
+				p *= float([x + '/' + y for x in f for y in m].count(genotype))/float(len([x + '/' + y for x in f for y in m]))
+			result.append((father[1],mother[1],p))
+	print "Parent pairs  \n\n", result
+			#print required_mouse
+			#print father[0],mother[0]
+	for father in f2:
+		for mother in m1+m2:
+			#print father[0],mother[0]
+			pass
 
-	pass
 
 def compute_ancestors(request):
 	errors=[]
@@ -135,9 +154,9 @@ def compute_ancestors(request):
 			required_parent_type_one = []
 			required_parent_type_two = []
 			cd = form.cleaned_data
-			required_parent_type_one, required_parent_type_two = determine_parent_genotype(cd)
+			required_mouse,required_parent_type_one, required_parent_type_two = determine_parent_genotype(cd)
 			f1,m1,f2,m2 = retrieve_parents(required_parent_type_one,required_parent_type_two)
-			breeding_calculator(f1,m1,f2,m2,cd)
+			compute_probability(f1,m1,f2,m2,required_mouse)
 
 			
 			return render(request, 'potential_parents.html', {'p1': required_parent_type_one, 'p2': required_parent_type_two})
