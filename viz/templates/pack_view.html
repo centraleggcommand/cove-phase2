@@ -281,15 +281,17 @@ function create_initial_view( initNodes) {
                     }
                 })
                 .on("mouseover", function() {
-                    //undo any previous selection
-                    d3.select(".hovered")
-                            .classed("hovered", false)
-                            .style("stroke", "rgb(150, 150, 150)")
-                            .style("stroke-width", "1.0px")
-                    d3.select(this)
-                            .classed("hovered", true)
-                            .style( "stroke", "#66FF33")
-                            .style("stroke-width", "3px");
+                    if (d3.select(this).datum().depth != 0) {
+                        //undo any previous selection
+                        d3.select(".hovered")
+                                .classed("hovered", false)
+                                .style("stroke", "rgb(150, 150, 150)")
+                                .style("stroke-width", "1.0px")
+                        d3.select(this)
+                                .classed("hovered", true)
+                                .style( "stroke", "#66FF33")
+                                .style("stroke-width", "3px");
+                    }
                 });
     }
 
