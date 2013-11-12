@@ -42,10 +42,12 @@ function set_scale_foci( nodeLayouts) {
         }
     }
 
+    var genPadding = 25;
     // Add diameter of each generation to scale width.
     var totSpan = FV.genFoci.reduce( function( prev, curr, i, array) {
         return prev + curr.radius * 2;
     }, 0)
+    totSpan = totSpan + (genPadding * (nodeLayouts.length - 1));
     // Get max radius to scale the height.
     var maxRadius = FV.genFoci.reduce( function( prev, curr, i, array) {
         return (prev < curr.radius) ? curr.radius : prev;
@@ -63,7 +65,7 @@ function set_scale_foci( nodeLayouts) {
         FV.genFoci[i].radius = scaledRadius;
         FV.genFoci[i]['dx'] = runningSum + scaledRadius - FV.genFoci[i].x;
         FV.genFoci[i]['dy'] = 0;
-        runningSum += (scaledRadius * 2);
+        runningSum = runningSum + genPadding + (scaledRadius * 2);
     }
 
 }
@@ -242,11 +244,6 @@ function create_initial_view( initNodes) {
             .attr("width", FV.width)
             .attr("height", FV.height);
 
-    //FV.svg.style("opacity", "0.1")
-    //        .transition()
-    //        .duration(800)
-    //        .style("opacity","1");
-
     // Add event handlers to various view options
     d3.select("#selectColorGroup").on("change", handle_color);
     d3.select("#genderCheck").on("click", handle_group_gender);
@@ -361,8 +358,21 @@ function update_view( nodeLayouts) {
     }
     // Go through each generation in nodeLayout
     for (var i=0; i < nodeLayouts.length; i++) {
-        d3.selectAll(".gen" + i).data(nodeLayouts[i], function(d) { return d.mouseId;})
-                .transition().delay(700 * Math.pow(i, 1.5)).duration(1400 * Math.pow(i, 1.5))
+        var genSelect = d3.selectAll(".gen" + i).data(nodeLayouts[i], function(d) { return d.mouseId;});
+        // Add any inner hierarchy circles
+        genSelect.enter()
+                .append("circle")
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .attr("r", function(d) { return FV.fit_scale(d.r); })
+                .style("stroke", "rgb(150,150,150)")
+                .style("stroke-width", "1.0px")
+                .style("fill", "rgba(255,255,255,0)" );
+        // Remove any hierarchy circles not needed
+        genSelect.exit()
+                .transition().duration(800).style("stroke", "rgba(150, 150, 150, .2");
+        // Update nodes
+        genSelect.transition().delay(700 * Math.pow(i, 1.5)).duration(1400 * Math.pow(i, 1.5))
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
                 .attr("r", function(d) { return FV.fit_scale(d.r); });
