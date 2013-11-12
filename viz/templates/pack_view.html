@@ -13,6 +13,17 @@
 <script type="text/javascript" src="http://code.jquery.com/jquery-1.6.min.js"></script>
 
 <script>
+
+// Allow function currying - copied from "Javascript: The Good Parts" by Crockford
+Function.prototype.curry = function() {
+    var slice = Array.prototype.slice,
+            args = slice.apply(arguments),
+            that = this;
+    return function() {
+        return that.apply(null, args.concat(slice.apply(arguments)));
+    };
+};
+
 // The var FV is a container for global data to be referenced explicitly.
 var FV = {};
 
@@ -59,13 +70,55 @@ function set_scale_foci( nodeLayouts) {
 
 function initialize() {
     FV.allMice = JSON.parse( '{{ jsonAllMice | safe}}');
-    //The allMice object is an array of arrays for each generation, and element a json object.
+    //The allMice object is an array of arrays for generation data, and element a json object.
     //Convert to format for hierarchical packing (1 level for all objects of a generation).
     //Use separate layout for each generation.
     FV.miceGenData = [];
     for (var i=0; i < FV.allMice.length; i++) {
         FV.miceGenData.push( {'name': 'Gen' + i, 'children': FV.allMice[i]});
     }
+
+    // Mice data format needs to support additional hierarchy such as by gender and litter.
+    // Create an object with a field that supplies ordered array of functions to apply to
+    // the data in most basic form - grouped by generation.
+    FV.formattedData = { // format_fxns are functions that take one parameter - array of raw data objects
+                        'format_fxns': [],
+                        'miceData': FV.miceGenData,
+                        'get_hierarchy': function() {
+                            // Recursive helper fxn
+                            var that = this;
+                            var applyFormat = function( currLevel, format_index) {
+                                var innerHierarchy = [];
+                                for (var ci=0; ci < currLevel.length; ci++) {
+                                    var formattedGroup =
+                                        {'name': currLevel[ci].name,
+                                         'children': that.format_fxns[format_index]( currLevel[ci].children) };
+                                    // A depth first approach in recursion, in which the format_index
+                                    // corresponds to depth
+                                    if ( (format_index + 1) < that.format_fxns.length) {
+                                        // Overwrite children array with grouped version
+                                        formattedGroup.children = applyFormat( formattedGroup.children, format_index + 1);
+                                    }
+                                    innerHierarchy.push( formattedGroup);
+                                }
+                                return innerHierarchy;
+                            };
+                            if (this.format_fxns.length == 0) {
+                                return this.miceData;
+                            }
+                            // Recursively apply format
+                            return applyFormat( this.miceData, 0);
+                        },
+                        // The id parameter needs to correlate with DOM checkbox that uses the 'fmt' function
+                        'add_format': function( id, fmt) {
+                            // Attach the id as an attribute belonging to the fmt function object
+                            fmt.id = id;
+                            this.format_fxns.push( fmt);
+                        },
+                        'remove_format': function( id) {
+                            this.format_fxns = this.format_fxns.filter( function( elem) { return elem.id != id; });
+                        }
+    };
 
     FV.width = 950,
     FV.height = 450;
@@ -94,23 +147,93 @@ function initialize() {
 function handle_color() {
     var selected = this.value;
     if (selected == "genotype") {
-        d3.select("#gene_selector").style("display","inline")
+        // Show the gene radio button selectors
+        d3.select("#geneSelector").style("display","inline")
     }
-    else {
-        d3.select("#gene_selector").style("display","none")
+    else if (selected == "gender") {
+        d3.select("#geneSelector").style("display","none")
+        update_color( assign_gender_color);
     }
 }
 
-function assign_color( d) {
-    var grp = FV.sel.options[FV.sel.selectedIndex].value;
-    if (grp == "gender") {
-        if(d.gender == "F") {
-            return "#FF7575";
+function assign_gender_color( d) {
+    if(d.gender == "F") {
+        return "#FF7575";
+    }
+    else if (d.gender == "M") {
+        return "#3366FF";
+    }
+    else return "#C0C0C0";
+}
+
+// This function is meant to be curried, since the selections should not have to be looked up
+// for every node that this function is called for.
+function assign_genotype_color( selections, d) {
+    var unmatched = "#C0C0C0";
+    var match = "#00AA00";
+    // Try to eliminate by looking for mismatch with selection values
+    if (d.gene1 in selections) {
+        if (d.genotype1 != selections[d.gene1]) {
+            return unmatched;
         }
-        else if (d.gender == "M") {
-            return "#3366FF";
+    }
+    if (d.gene2 in selections) {
+        if (d.genotype2 != selections[d.gene2]) {
+            return unmatched;
         }
-        else return "#C0C0C0";
+    }
+    if (d.gene3 in selections) {
+        if (d.genotype3 != selections[d.gene3]) {
+            return unmatched;
+        }
+    }
+    return match;
+}
+
+// Callback when gene radio button is clicked
+function handle_gene() {
+    var selections = {};
+    var that = this; // 'that' is used for closure
+    // The 'this' context here is for element clicked.
+    // Make sure the value for the gene is the newly selected checkbox
+    if (this.checked == true) {
+        selections[this.name] = this.value;
+    }
+    // Create a dictionary of genes with selected values
+    d3.selectAll("#geneSelector input").each( function() {
+        // Uncheck a previous gene value
+        if (this.checked == true) {
+            if ( (this.name == that.name) && (this.value != that.value) ) {
+                this.checked = false;
+            }
+            else selections[this.name] = this.value;
+        }
+    })
+    // For unchecking a checkbox, the selections will not include this element
+    update_color( assign_genotype_color.curry( selections));
+}
+
+// Callback when user clicks on checkbox to group by gender
+function handle_group_gender() {
+    if (this.checked == true) {
+        FV.formattedData.add_format( "genderCheck", create_gender_format);
+        update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
+    }
+    else {
+        FV.formattedData.remove_format( "genderCheck");
+        update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
+    }
+}
+
+// Callback when user clicks on checkbox to group by litter
+function handle_group_litter() {
+    if (this.checked == true) {
+        FV.formattedData.add_format( "litterCheck", create_litter_format);
+        update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
+    }
+    else {
+        FV.formattedData.remove_format( "litterCheck");
+        update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
     }
 }
 
@@ -119,14 +242,23 @@ function create_initial_view( initNodes) {
             .attr("width", FV.width)
             .attr("height", FV.height);
 
-    FV.svg.style("opacity", "0.1")
-            .transition()
-            .duration(800)
-            .style("opacity","1");
+    //FV.svg.style("opacity", "0.1")
+    //        .transition()
+    //        .duration(800)
+    //        .style("opacity","1");
 
-    FV.sel = d3.select("#selectColorGroup")
-            .node();
+    // Add event handlers to various view options
     d3.select("#selectColorGroup").on("change", handle_color);
+    d3.select("#genderCheck").on("click", handle_group_gender);
+    d3.select("#litterCheck").on("click", handle_group_litter);
+    d3.selectAll("#geneSelector input").on("click", handle_gene);
+
+    // Use default color selection indicated by DOM dropdown element
+    var colorOption = d3.select("#selectColorGroup").node();
+    var colorBy = colorOption.options[colorOption.selectedIndex].value;
+    var color_fxn;
+    if (colorBy == "gender") { color_fxn = assign_gender_color; }
+    else if (colorBy == "genotype") { color_fxn = assign_genotype_color;}
 
     for (var i=0; i < initNodes.length; i++) {
         var genGrp = FV.svg.append("g")
@@ -144,7 +276,9 @@ function create_initial_view( initNodes) {
                 .style("stroke-width", "1.0px")
                 .style("fill", function(d, i) {
                     if (d.depth == 0) { return "rgba(255,255,255,0)"; }
-                    else { return assign_color(d); }
+                    else {
+                        return color_fxn(d);
+                    }
                 })
                 .on("mouseover", function() {
                     //undo any previous selection
@@ -162,23 +296,44 @@ function create_initial_view( initNodes) {
 }
 
 // Format mice data to have hierarchy of generation then gender type
-function create_gender_format() {
-    var genderData = [];
-    for (var i=0; i < FV.allMice.length; i++) {
-        // Create additional grouping by gender
-        var genderGroup = [];
-        genderGroup.push( {'name': 'female',
-                           'children': FV.allMice[i].filter( function( elem) { return elem.gender == "F"; })
-        });
-        genderGroup.push( {'name': 'male',
-            'children': FV.allMice[i].filter( function( elem) { return elem.gender == "M"; })
-        });
-        genderGroup.push( {'name': 'unknown',
-            'children': FV.allMice[i].filter( function( elem) { return (elem.gender != "M") && (elem.gender != "F"); })
-        });
-        genderData.push( {'name': 'Gen' + i, 'children': genderGroup});
+function create_gender_format( rawNodes) {
+    // Create additional grouping by gender
+    var genderGroup = [];
+    genderGroup.push( {'name': 'female',
+                       'children': rawNodes.filter( function( elem) { return elem.gender == "F"; })
+    });
+    genderGroup.push( {'name': 'male',
+        'children': rawNodes.filter( function( elem) { return elem.gender == "M"; })
+    });
+    genderGroup.push( {'name': 'unknown',
+        'children': rawNodes.filter( function( elem) { return (elem.gender != "M") && (elem.gender != "F"); })
+    });
+    return genderGroup;
+}
+
+// Format data to have hierarchy of litters unique by motherID, fatherID, and litter number
+function create_litter_format( rawNodes) {
+    var litterGroup = [];
+    // Hold members of each distinct litter in a separate array
+    var distinctLitters = {};
+    for (var i=0; i < rawNodes.length; i++) {
+        var litterId = rawNodes[i].motherId + rawNodes[i].fatherId + rawNodes[i].litter;
+        if (distinctLitters[litterId]) {
+            distinctLitters[litterId].push(rawNodes[i]);
+        }
+        else {
+            distinctLitters[litterId] = [rawNodes[i]];
+        }
     }
-    return genderData;
+    // Create hierarchy format
+    var attrib;
+    for (attrib in distinctLitters) {
+        // Make sure the attribute is not inherited
+        if (distinctLitters.hasOwnProperty(attrib) ) {
+            litterGroup.push( {'name': attrib, 'children': distinctLitters[attrib]} );
+        }
+    }
+    return litterGroup;
 }
 
 // Take an array of objects, with each object representing a generation, and having a children field.
@@ -195,10 +350,6 @@ function layout_generations( genArray) {
     return nodeLayouts;
 }
 
-function get_id( d) {
-        if (d) { return d.mouseId; }
-    }
-
 // Update position of circles
 function update_view( nodeLayouts) {
     set_scale_foci( nodeLayouts);
@@ -208,55 +359,74 @@ function update_view( nodeLayouts) {
     }
     // Go through each generation in nodeLayout
     for (var i=0; i < nodeLayouts.length; i++) {
-        d3.selectAll(".gen" + i).data(nodeLayouts[i], get_id)
-                .transition().duration(1000)
+        d3.selectAll(".gen" + i).data(nodeLayouts[i], function(d) { return d.mouseId;})
+                .transition().delay(700 * Math.pow(i, 1.5)).duration(1400 * Math.pow(i, 1.5))
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
                 .attr("r", function(d) { return FV.fit_scale(d.r); });
     }
 }
 
+// The parameter color_fxn is a function with one parameter - the node data
+function update_color( color_fxn) {
+    d3.selectAll(".node").transition()
+            .style("fill", function(d, i) {
+                if (d.depth == 0) { return "rgba(255,255,255,0)"; }
+                else { return color_fxn(d); }
+            });
+}
+
 $(document).ready( function() {
     create_initial_view( initialize() );
-    update_view( layout_generations( create_gender_format() ));
+    FV.formattedData.add_format( "genderCheck", create_gender_format);
+    update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
 
 }); //end document ready
 
 </script>
 
-<div id="filters">
+<div id="filters" style="background-color: #EFEFFA">
 <table cellspacing="10">
     <tr><td>
-        <label>Color By: </label>
+        <label><b>Color By: </b></label>
         <select id="selectColorGroup">
             <option value="gender" selected="true">Gender</option>
             <option value="genotype">Genotype</option>
         </select>
-        </div>
     </td>
     <td>
-        <label>Partition By: </label>
-        <button id="btnAll">All</button>
+        <label><b>Circle Size By: </b></label>
+        <select id="selectSizeGroup">
+            <option value="uniform">Uniform</option>
+            <option value="children">Number of children</option>
+        </select>
     </td>
     <td>
-        <button id="btnGen">Generation</button>
+        <label><b>Group By: </b></label>
+        <input type="checkbox" id="genderCheck" value="gender" checked="true">Gender
+    </td>
+    <td>
+        <input type="checkbox" id="litterCheck" value="litter">Litter
     </td>
     </tr>
-    <tr id="gene_selector" style="display:none"><td>
+    <tr id="geneSelector" style="display:none"><td>
         <label>LEF1</label><br>
-        <input type="radio" name="genotype" value="+/-">+/-<br>
-        <input type="radio" name="genotype" value="-/-">-/-<br>
-        <input type="radio" name="genotype" value="WT">WT<br>
+        <input type="checkbox" name="LEF1" value="+/-">+/-<br>
+        <input type="checkbox" name="LEF1" value="-/-">-/-<br>
+        <input type="checkbox" name="LEF1" value="WT">WT<br>
+        <input type="checkbox" name="LEF1" value="NA">NA<br>
     </td><td>
         <label>RANKL</label><br>
-        <input type="radio" name="genotype" value="+/-">+/-<br>
-        <input type="radio" name="genotype" value="-/-">-/-<br>
-        <input type="radio" name="genotype" value="WT">WT<br>
+        <input type="checkbox" name="RANKL" value="+/-">+/-<br>
+        <input type="checkbox" name="RANKL" value="-/-">-/-<br>
+        <input type="checkbox" name="RANKL" value="WT">WT<br>
+        <input type="checkbox" name="RANKL" value="NA">NA<br>
     </td><td>
         <label>PTHrP</label><br>
-        <input type="radio" name="genotype" value="+/-">+/-<br>
-        <input type="radio" name="genotype" value="-/-">-/-<br>
-        <input type="radio" name="genotype" value="WT">WT<br>
+        <input type="checkbox" name="PTHrP" value="+/-">+/-<br>
+        <input type="checkbox" name="PTHrP" value="-/-">-/-<br>
+        <input type="checkbox" name="PTHrP" value="WT">WT<br>
+        <input type="checkbox" name="PTHrp" value="NA">NA<br>
     </td></tr>
 </table>
 </div>
