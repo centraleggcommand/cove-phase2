@@ -350,24 +350,20 @@ function layout_generations( genArray) {
     return nodeLayouts;
 }
 
-function get_id( d) {
-        if (d) { return d.mouseId; }
-    }
-
 // Update position of circles
 function update_view( nodeLayouts) {
     set_scale_foci( nodeLayouts);
-    // Go through each generation in nodeLayout
-    for (var i=0; i < nodeLayouts.length; i++) {
-        d3.selectAll(".gen" + i).data(nodeLayouts[i], get_id)
-                .transition().duration(1500)
-                .attr("cx", function(d) { return d.x; })
-                .attr("cy", function(d) { return d.y; })
-                .attr("r", function(d) { return FV.fit_scale(d.r); });
-    }
     // Update the translation for each generation based on any change in genFoci and radii
     for (var i=0; i < nodeLayouts.length; i++) {
         d3.select("#g" + i).attr("transform","translate(" + FV.genFoci[i].dx + ", " + FV.genFoci[i].dy + ")" );
+    }
+    // Go through each generation in nodeLayout
+    for (var i=0; i < nodeLayouts.length; i++) {
+        d3.selectAll(".gen" + i).data(nodeLayouts[i], function(d) { return d.mouseId;})
+                .transition().delay(700 * Math.pow(i, 1.5)).duration(1400 * Math.pow(i, 1.5))
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .attr("r", function(d) { return FV.fit_scale(d.r); });
     }
 }
 
