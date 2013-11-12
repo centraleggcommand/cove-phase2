@@ -42,3 +42,5 @@ def breeding_calculator( genotype of mouse required):
 Litter size is important, since it'll help us omit the parents who are less likely to produce required type of offspring in a litter. Like in the above example where the probability of breeding an Aabb mouse is 1/8, if the litter size of only say 5, then there's almost 0 chance that the offspring will be of the required type, so this pair can be omitted. 
 
 I still have to think about the data structures and see whether any specialised data structures would be required or whether we can just use a list or defaultdict to store the lineage, and implement the rest of the functionality using list comprehensions, generators and a host of other commonly used python resources.
+
+11/12 - Prune away dead fathers and mothers, visualize results, permute genotypes
