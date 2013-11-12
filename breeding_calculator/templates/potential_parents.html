@@ -1,20 +1,46 @@
 <p>
-	Potential parents are:
+	Required Mouse is: 
            
 </p>
+{% if required_mouse %}
+    {{required_mouse}}
+{% endif %}
+
+{% if type_one %}
+    <p>Parent type one </p>
+    {{type_one}}
+{% endif %}
+
+{% if type_two %}
+    <p>Parent type two </p>
+    {{type_two}}
+{% endif %}
+
+{% if f1 %}
+     <p> Fathers of type one </p>
+    {{f1}}
+{% endif %}
+
+{% if m1 %}
+    <p>Mothers of type one </p>
+    {{m1}}
+{% endif %}
+
+{% if f2 %}
+    <p>Fathers of type two </p>
+    {{f2}}
+{% endif %}
+
+{% if m2 %}
+    <p>Mothers of type two </p>
+    {{m2}}
+{% endif %}
 
 
-{% if p1 and p2 %}
+{% if result %}
     <ul>
-    	<p>Parent one </p>
-        {% for genotype,trait in p1.items %}        
-        {{ genotype}}
-        {{trait}}         
-        {% endfor %}
-        <p> parent two</p>
-        {% for genotype,trait in p2.items %}        
-        {{ genotype}}
-        {{trait}}        
+    	{% for val in result %}        
+        <li>{{ val }}</li>        
         {% endfor %}
     </ul>
 {% else %}
