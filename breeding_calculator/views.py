@@ -55,8 +55,6 @@ def determine_parent_genotype(cd):
 		trait_two = [trait for trait in ['+/+','+/-','-/-','-/+']]
 	required_parent_type_one.append((cd['genotype3'], trait_one))
 	required_parent_type_two.append((cd['genotype3'], trait_two))
-	print "Type One :  ", required_parent_type_one,"\n\n\n", "Type Two: ",required_parent_type_two,"\n\n\n"
-	print "\n\n", "Target:  ", required_mouse,"\n\n\n\n",required_parent_type_one + required_parent_type_two
 	return required_mouse, required_parent_type_one,required_parent_type_two
 
 def retrieve_parents(required_parent_type_one,required_parent_type_two):
@@ -120,8 +118,6 @@ def retrieve_parents(required_parent_type_one,required_parent_type_two):
 				mothers_two.append((mice[0],mouse['mouseId']))
 
 
-	print "Fathers of type one:  ", fathers_one,"\n\n","Mothers of type one:  ", mothers_one,"\n\n"
-	print "Fathers of type two:  ",fathers_two,"\n\n","Mothers of type two:   ", mothers_two,"\n\n"
 	return fathers_one,mothers_one,fathers_two,mothers_two
 
 	
@@ -137,13 +133,18 @@ def compute_probability(f1,m1,f2,m2,required_mouse):
 				m = dict([(val.split(':')[0],val.split(':')[1]) for val in mother[0]])[gene].split('/')
 				p *= float([x + '/' + y for x in f for y in m].count(genotype))/float(len([x + '/' + y for x in f for y in m]))
 			result.append((father[1],mother[1],p))
-	print "Parent pairs  \n\n", result
-			#print required_mouse
-			#print father[0],mother[0]
+
 	for father in f2:
 		for mother in m1+m2:
-			#print father[0],mother[0]
-			pass
+			p = 1
+			for trait in required_mouse:
+				gene, genotype = trait.split(':')[0],trait.split(':')[1]
+				f = dict([(val.split(':')[0],val.split(':')[1]) for val in father[0]])[gene].split('/')
+				m = dict([(val.split(':')[0],val.split(':')[1]) for val in mother[0]])[gene].split('/')
+				p *= float([x + '/' + y for x in f for y in m].count(genotype))/float(len([x + '/' + y for x in f for y in m]))
+			result.append((father[1],mother[1],p))
+
+	return result
 
 
 def compute_ancestors(request):
@@ -156,9 +157,7 @@ def compute_ancestors(request):
 			cd = form.cleaned_data
 			required_mouse,required_parent_type_one, required_parent_type_two = determine_parent_genotype(cd)
 			f1,m1,f2,m2 = retrieve_parents(required_parent_type_one,required_parent_type_two)
-			compute_probability(f1,m1,f2,m2,required_mouse)
-
-			
+			result = compute_probability(f1,m1,f2,m2,required_mouse)			
 			return render(request, 'potential_parents.html', {'p1': required_parent_type_one, 'p2': required_parent_type_two})
 	else:
 		form=GenotypeInputForm
