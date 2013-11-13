@@ -89,17 +89,19 @@ function initialize() {
                         'get_hierarchy': function() {
                             // Recursive helper fxn
                             var that = this;
-                            var applyFormat = function( currLevel, format_index) {
+                            var applyFormat = function( parentName, currLevel, format_index) {
                                 var innerHierarchy = [];
                                 for (var ci=0; ci < currLevel.length; ci++) {
                                     var formattedGroup =
-                                        {'name': currLevel[ci].name,
+                                        // Ensure the group name is unique for the circles denoting a group, and not
+                                        // a node, ie. a female and male group will both have a group representing litter 1
+                                        {'name': currLevel[ci].name + parentName,
                                          'children': that.format_fxns[format_index]( currLevel[ci].children) };
                                     // A depth first approach in recursion, in which the format_index
                                     // corresponds to depth
                                     if ( (format_index + 1) < that.format_fxns.length) {
                                         // Overwrite children array with grouped version
-                                        formattedGroup.children = applyFormat( formattedGroup.children, format_index + 1);
+                                        formattedGroup.children = applyFormat( formattedGroup.name, formattedGroup.children, format_index + 1);
                                     }
                                     innerHierarchy.push( formattedGroup);
                                 }
@@ -109,7 +111,7 @@ function initialize() {
                                 return this.miceData;
                             }
                             // Recursively apply format
-                            return applyFormat( this.miceData, 0);
+                            return applyFormat( '',this.miceData, 0);
                         },
                         // The id parameter needs to correlate with DOM checkbox that uses the 'fmt' function
                         'add_format': function( id, fmt) {
@@ -298,15 +300,21 @@ function create_initial_view( initNodes) {
 function create_gender_format( rawNodes) {
     // Create additional grouping by gender
     var genderGroup = [];
-    genderGroup.push( {'name': 'female',
-                       'children': rawNodes.filter( function( elem) { return elem.gender == "F"; })
-    });
-    genderGroup.push( {'name': 'male',
+    var grouping =  {'name': 'female',
+                     'children': rawNodes.filter( function( elem) { return elem.gender == "F"; })
+    };
+    if (grouping.children.length > 0) { genderGroup.push( grouping); }
+
+    var grouping =  {'name': 'male',
         'children': rawNodes.filter( function( elem) { return elem.gender == "M"; })
-    });
-    genderGroup.push( {'name': 'unknown',
+    };
+    if (grouping.children.length > 0) { genderGroup.push( grouping); }
+
+    var grouping =  {'name': 'unknown',
         'children': rawNodes.filter( function( elem) { return (elem.gender != "M") && (elem.gender != "F"); })
-    });
+    };
+    if (grouping.children.length > 0) { genderGroup.push( grouping); }
+
     return genderGroup;
 }
 
@@ -358,21 +366,24 @@ function update_view( nodeLayouts) {
     }
     // Go through each generation in nodeLayout
     for (var i=0; i < nodeLayouts.length; i++) {
-        var genSelect = d3.selectAll(".gen" + i).data(nodeLayouts[i], function(d) { return d.mouseId;});
+        var genSelect = d3.select("#g" + i).selectAll(".gen" + i).data(nodeLayouts[i], function(d) {
+            return d.mouseId ? d.mouseId : d.name; });
         // Add any inner hierarchy circles
         genSelect.enter()
                 .append("circle")
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
                 .attr("r", function(d) { return FV.fit_scale(d.r); })
-                .style("stroke", "rgb(150,150,150)")
+                .classed("gen" + i, "true")
+                .style("stroke", "rgba(150,150,150,0.1)")
                 .style("stroke-width", "1.0px")
                 .style("fill", "rgba(255,255,255,0)" );
         // Remove any hierarchy circles not needed
         genSelect.exit()
-                .transition().duration(800).style("stroke", "rgba(150, 150, 150, .2");
+                .transition().duration(1200).style("stroke", "rgba(150, 150, 150, .2").remove();
         // Update nodes
         genSelect.transition().delay(700 * Math.pow(i, 1.5)).duration(1400 * Math.pow(i, 1.5))
+                .style("stroke", "rgba(150,150,150,0.9)")
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
                 .attr("r", function(d) { return FV.fit_scale(d.r); });
