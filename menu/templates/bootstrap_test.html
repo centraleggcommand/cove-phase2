@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Bootstrap 101 Template</title>
+<title>Login</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Bootstrap -->
 {% load staticfiles %}
@@ -11,17 +11,15 @@
     <script src="http://code.jquery.com/jquery.js"></script>
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
     <div class="container">
-        <div class="navbar">
-            <div class="navbar-inner">
-                <a class="brand" href="#">COVE Main Menu</a>
-                <div class="container">
-                    <ul class="nav">
-                    <li class="active"><a href="#">View</a></li>
-                    <li><a href="/viz/find_lineage.html">Individual View</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+        <ul class="nav nav-tabs">
+            <li class="active">
+                <a href="#">Home</a>
+            </li>
+            <li>
+                <a href="#">Login</a>
+            </li>
+        </ul>
     </div>
+
 </body>
 </html>

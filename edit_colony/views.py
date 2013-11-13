@@ -31,8 +31,8 @@ class MouseEditForm( forms.ModelForm):
 def mouse_context( gene1Val='',
 				   gene2Val='',
 				   gene3Val='',
-					submitAction='/edit_colony/add_mouse/',
-					header='Mouse ID must be unique'):
+				   submitAction='/edit_colony/add_mouse/',
+				   header='Please correct the following errors'):
 	allVars = {}
 	gTypes = []
 	for t in Genotype.objects.all():
@@ -44,6 +44,77 @@ def mouse_context( gene1Val='',
 	allVars['submitAction'] = submitAction
 	allVars['header'] = header
 	return allVars
+
+
+def mousee_context( gene1Val='',
+				   gene2Val='',
+				   gene3Val='',
+					submitAction='/edit_colony/validate_mouse/',
+					header='Please correct the following errors'):
+	allVars = {}
+	gTypes = []
+	for t in Genotype.objects.all():
+		gTypes.append(t.name)
+	allVars['geneList'] = gTypes
+	allVars['gene1Val'] = gene1Val
+	allVars['gene2Val'] = gene2Val
+	allVars['gene3Val'] = gene3Val
+	allVars['submitAction'] = submitAction
+	allVars['header'] = header
+	return allVars
+
+def validate_mouse(request):
+	if request.method == 'POST':
+		valid = True
+		form_errors=MouseEditForm(request.POST)
+		if request.POST["mouseId"]:			
+			try:
+				dbEntry = Mouse.objects.get(mouseId=request.POST["mouseId"])
+				form_errors.errors['mouseId'] = \
+				"Mouse ID already in use - enter new ID"
+				valid = False
+			except Mouse.DoesNotExist:
+				valid=True
+		if request.POST["fatherId"]:
+			try:
+				father = Mouse.objects.get(mouseId=request.POST["fatherId"])
+				if father.gender == 'F':
+					form_errors.errors['fatherId']= \
+					"Father specified is a female. Please enter correct father."
+					valid = False
+			except Mouse.DoesNotExist:
+				form_errors.errors['fatherId']= \
+				"Father does not exist in colony. Please enter valid father."
+				valid = False
+		if request.POST["motherId"]:
+			try:
+				mother = Mouse.objects.get(mouseId=request.POST["motherId"])
+				if mother.gender == 'M':
+					form_errors.errors['motherId']= \
+					"Mother specified is a female. Please enter valid mother."
+					valid = False
+			except Mouse.DoesNotExist:
+				form_errors.errors['motherId']=\
+				"Mother does not exist in colony. Please enter valid mother."
+				valid = False
+		#if form_errors.is_valid():
+		if valid == True:
+			form_errors.save()
+			return HttpResponse("Saved mouse data")
+		else:
+			contextVars=mousee_context()
+			contextVars['form'] =  form_errors
+			return render(request, 'validate_mouse.html',contextVars)
+	form = MouseEditForm()
+	contextVars=mousee_context()
+	contextVars['form']=form
+	return render(request, 'validate_mouse.html', contextVars)
+
+
+
+
+
+
 
 def add_mouse(request):
 	if request.method == 'POST':

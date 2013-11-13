@@ -1,5 +1,6 @@
 import csv
 from mice_db.models import Mouse, Colony
+import os
 
 # This function will read the csv file given as parameter
 # and then load the database specified by the Django project.
@@ -9,10 +10,11 @@ from mice_db.models import Mouse, Colony
 # USAGE:
 # From within mice_db dir, run "python ../manage.py shell"
 # Within interactive shell, run "from mice_db import populate"
-# Within interactive shell, run "populate.upload_csv([filename])
+# Within interactive shell, run "populate.upload_csv(['/mice_db/colonyC_ext'])
 
 def upload_csv( fileName):
-	with open( fileName) as csvfile:
+	curpath = os.path.abspath(os.curdir)
+	with open(fileName) as csvfile:
 		mouseReader = csv.reader( csvfile)
 		# Obtain header with column names
 		columns = mouseReader.next()

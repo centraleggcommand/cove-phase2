@@ -8,7 +8,7 @@ class Mouse(models.Model):
 	mouseId = models.CharField(max_length=15, primary_key=True)
 	colonyId = models.ForeignKey('Colony', blank=True, null=True, on_delete=models.SET_NULL)
 	generation = models.IntegerField(default=0)
-	gender = models.CharField(max_length=1)
+	gender = models.CharField(max_length=5)
 	litter = models.IntegerField(default=0)
 	fatherId = models.CharField(max_length=15, blank=True)
 	motherId = models.CharField(max_length=15, blank=True)
@@ -26,6 +26,9 @@ class Mouse(models.Model):
 	genotype1 = models.CharField(max_length=10)
 	genotype2 = models.CharField(max_length=10)
 	genotype3 = models.CharField(max_length=10)
+
+	def __unicode__(self):
+		return self.mouseId
 
 class Colony(models.Model):
 	colonyId = models.IntegerField(primary_key=True)

@@ -1,0 +1,46 @@
+So I've been thinking about the breeding calculator and some of the things we'd discussed yesterday and I realised it's not THAT complicated, even when teh user doesn't specify the parents' genes and even when we have to do the intermediate breeding you talked about, where we first have to breed the parents before breeding the mice of the genotype we need. For instance, let's suppose the user wants 10 mice of the type LEF + - / RANKL - - . Like I'd mentioned to you yesterday, there's an intermediate mapping that I do for the sake of convenience, where a LEF + - / RANKL -- would be mapped to Aabb. In order to obtain a mouse with this genotype, we'll need a parent of the type A*b* (technically, it would be A*b***, since the last gene can be CC, cc, Cc or cC) and a parent of the type a*b*, where * is a placeholder that can hold either value. For example, an A*b* type of mouse can be either an AAbB or an AAbb or an AabB or an Aabb. This is trivial enough to calculate. Then we need to pull out the mice from the database which shares any of these genotypes, which can be accomplished with the help of regular expressions. 
+
+Next, you mentioned the scenario where the parents required to breed mice of a specific genotype might not exist and would have to be bred first. This again doesn't seem to be TOO complicated. Suppose we require 5 mice with the genotype aabb, then the parents would obviously be of the genotype a*b* and a*b*. Now, if we have four type of mice which can satisfy this requirement - aAbB or aabB or aAbb or aabb, we're good to go. If we don't have ANY of these mice, then we'll need to breed them first. 
+
+This can be structured along the lines of a recursion problem. Furthermore, I also feel we can realise this using a binary tree or probably even a red black tree (which is a self balancing binary search tree). With a bit of clever algorithmic manoeuvring, I think one should be able to tell right away how many generations of breeding would be required (the height of the tree). Also, since we'll need several such trees, we can envisage it in the form of a forest, where the connected components are these various binary trees. We can even look into Polytrees and see if we can utilise any machine learning/AI techniques to optimize our algorithm. Alternatively, we could use something like a treap to associate a genotype (something liek our A*b*) which will serve as the 'ordered key' to a set of values (the values could be the possible mice for the given genotype). If we can map the genotype to a number (say, A*B* can be a 0, A*b* a 1, a*B* and 2 and so forth), then the values can be direct strings themselves. I'll have to read about this in more detail, but I think these present loads of exciting posibilities. 
+
+I've been thinking more about the breeding calculator, and now it appears that we might not even have to generate the punnett squares at all. We'll only need to use probability theory to compute the likelihood of a potential set of parents breeding mice of a specific genotype.
+
+Just to recap what I'd previously written:
+
+ For instance, let's suppose the user wants 10 mice of the type LEF + - / RANKL - - . Like I'd mentioned to you yesterday, there's an intermediate mapping that I do for the sake of convenience, where a LEF + - / RANKL -- would be mapped to Aabb. In order to obtain a mouse with this genotype, we'll need a parent of the type A*b* and a parent of the type a*b*, where * is a placeholder that can hold either value. For example, an A*b* type of mouse can be either an AAbB or an AAbb or an AabB or an Aabb.
+Hypothetically, let the mice we choose be AAbB and aAbB. From what I've read (here, here and here), the inheritance of the alleles are independent events (i.e, trait A doesn't influence trait B). 
+
+So we have parents: AAbB and aAbB and required offspring: Aabb
+
+Since A and B are independent, we only need to multiply the probability of obtaining an Aa and the probability of obtaining a bb to get the probability of obtaining an Aabb.
+
+Probability of obtaining Aa = 1/2
+                                                                               a      A
+                                                                         A     Aa    AA
+                                                                         A     Aa    AA
+
+Probability of obtaining bb = 1/4
+
+                                                                               b      B
+                                                                         b     bb    bB
+                                                                         B     Bb    BB
+
+      
+
+Thus the probability of obtaining Aabb = (1/2)*(1/4) = 1/8
+
+So the pseudocode looks something like this:
+
+def breeding_calculator( genotype of mouse required):
+
+1) First determine the type of parents that'll be required to breed a given mouse. If parents are unavailable, recursively call breeding_calculator with the input set to the required parents. 
+2) For every potential pair of parents, calculate the probability of them producing an offspring of required genotype.
+3) Rank parents according to probability of producing offspring of required genotype in a litter. 
+4) print parent pair ranked according to probability.
+
+Litter size is important, since it'll help us omit the parents who are less likely to produce required type of offspring in a litter. Like in the above example where the probability of breeding an Aabb mouse is 1/8, if the litter size of only say 5, then there's almost 0 chance that the offspring will be of the required type, so this pair can be omitted. 
+
+I still have to think about the data structures and see whether any specialised data structures would be required or whether we can just use a list or defaultdict to store the lineage, and implement the rest of the functionality using list comprehensions, generators and a host of other commonly used python resources.
+
+11/12 - Prune away dead fathers and mothers, visualize results, permute genotypes
