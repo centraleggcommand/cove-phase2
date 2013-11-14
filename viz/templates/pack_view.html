@@ -283,7 +283,7 @@ function create_initial_view( initNodes) {
     else if (colorBy == "genotype") { color_fxn = assign_genotype_color;}
 
     for (var i=0; i < initNodes.length; i++) {
-        var genGrp = FV.svg.append("g")
+        var genGrp = FV.svg.append("g").datum(i)
                 .attr("id","g" + i)
                 .attr("transform", "translate(" + FV.genFoci[i].dx + ", " + FV.genFoci[i].dy + ")" );
         genGrp.selectAll(".gen" + i).data(initNodes[i])
@@ -316,6 +316,12 @@ function create_initial_view( initNodes) {
                     }
                 });
     }
+    FV.svg.selectAll("g")
+            .append("text")
+            .attr("text-anchor", "middle")
+            .text( function(d) { return "Gen" + d;})
+            .attr("x", function(d) { return FV.genFoci[d].x; })
+            .attr("y", FV.height - 25);
 
 }
 
