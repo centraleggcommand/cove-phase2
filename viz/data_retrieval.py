@@ -1,4 +1,5 @@
 import json
+import collections
 from mice_db.models import Mouse
 
 # The following functions are used to create the json structure expected by D3
@@ -86,12 +87,19 @@ def all_mice_gen():
     genQuery = Mouse.objects.all().filter( generation=genNum)
     querySize = len(genQuery)
     while querySize > 0:
-        #allMice[genNum] = []
-        #for mouse in genQuery:
-        #    #allMice[genNum].append( mouse_json(mouse))
-        #    currGen.append( mouse_json(mouse))
         allMice.append( [mouse_json(m) for m in genQuery])
         genNum += 1
         genQuery = Mouse.objects.all().filter( generation=genNum)
         querySize = len(genQuery)
+    # Calculate number of children a mouse has spawned
+    childCounter = collections.defaultdict(int)
+    for gen in allMice:
+        for mouse in gen:
+            childCounter[mouse['fatherId']] += 1
+            childCounter[mouse['motherId']] += 1
+    # Save counts in each mouse
+    for gen in allMice:
+        for mouse in gen:
+            mouse['numOffspring'] = childCounter[mouse['mouseId']]
+
     return json.dumps( allMice)

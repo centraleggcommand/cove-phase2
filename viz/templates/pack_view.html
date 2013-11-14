@@ -130,6 +130,8 @@ function initialize() {
                         }
     };
 
+    FV.size_by = function() { return 1;}
+
     FV.width = 950,
     FV.height = 450;
 
@@ -145,7 +147,7 @@ function initialize() {
     var nodeLayouts = [];
     for (var i=0; i < FV.miceGenData.length; i++) {
         nodeLayouts.push( d3.layout.pack().size([FV.genFoci[i].estimate * 2, FV.height]).padding(10)
-                .value( function(d) { return 1; })
+                .value( FV.size_by)
                 .nodes( FV.miceGenData[i]));
     }
 
@@ -165,6 +167,22 @@ function handle_color() {
         update_color( assign_gender_color);
     }
 }
+
+function handle_size() {
+    // Assign a function based on value from selector, and parameter is __data__ obj
+    var selVal = this.value;
+    FV.size_by = function(d) {
+        if (selVal == "uniform") {
+            return 1;
+        }
+        else if (selVal == "children") {
+            return d.numOffspring + 1;
+        }
+        else return 1;
+    }
+    update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
+}
+
 
 function assign_gender_color( d) {
     if(d.gender == "F") {
@@ -227,24 +245,22 @@ function handle_gene() {
 function handle_group_gender() {
     if (this.checked == true) {
         FV.formattedData.add_format( "genderCheck", create_gender_format);
-        update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
     }
     else {
         FV.formattedData.remove_format( "genderCheck");
-        update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
     }
+    update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
 }
 
 // Callback when user clicks on checkbox to group by litter
 function handle_group_litter() {
     if (this.checked == true) {
         FV.formattedData.add_format( "litterCheck", create_litter_format);
-        update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
     }
     else {
         FV.formattedData.remove_format( "litterCheck");
-        update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
     }
+    update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
 }
 
 function create_initial_view( initNodes) {
@@ -254,6 +270,7 @@ function create_initial_view( initNodes) {
 
     // Add event handlers to various view options
     d3.select("#selectColorGroup").on("change", handle_color);
+    d3.select("#selectSizeBy").on("change", handle_size);
     d3.select("#genderCheck").on("click", handle_group_gender);
     d3.select("#litterCheck").on("click", handle_group_litter);
     d3.selectAll("#geneSelector input").on("click", handle_gene);
@@ -294,7 +311,7 @@ function create_initial_view( initNodes) {
                                 .style("stroke-width", "1.0px")
                         d3.select(this)
                                 .classed("hovered", true)
-                                .style( "stroke", "#66FF33")
+                                .style( "stroke", "rgb(250,250,0)")
                                 .style("stroke-width", "3px");
                     }
                 });
@@ -357,7 +374,7 @@ function layout_generations( genArray) {
     for (var i=0; i < genArray.length; i++) {
         // The size for packing is currently based on last boundary circle size
         nodeLayouts.push( d3.layout.pack().size([FV.genFoci[i].radius * 2, FV.height]).padding(10)
-                .value( function(d) { return 1; })
+                .value( FV.size_by)
                 .nodes( genArray[i]));
     }
     return nodeLayouts;
@@ -376,7 +393,7 @@ function update_view( nodeLayouts) {
             return d.mouseId ? d.mouseId : d.name; });
         // Add any inner hierarchy circles
         genSelect.enter()
-                .append("circle")
+                .insert("circle")
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
                 .attr("r", function(d) { return FV.fit_scale(d.r); })
@@ -424,18 +441,18 @@ $(document).ready( function() {
         </select>
     </td>
     <td>
-        <label><b>Circle Size By: </b></label>
-        <select id="selectSizeGroup">
-            <option value="uniform">Uniform</option>
-            <option value="children">Number of children</option>
-        </select>
-    </td>
-    <td>
         <label><b>Group By: </b></label>
         <input type="checkbox" id="genderCheck" value="gender" checked="true">Gender
     </td>
     <td>
         <input type="checkbox" id="litterCheck" value="litter">Litter
+    </td>
+    <td>
+        <label><b>Circle Size By: </b></label>
+        <select id="selectSizeBy">
+            <option value="uniform">Uniform</option>
+            <option value="children">Number of children</option>
+        </select>
     </td>
     </tr>
     <tr id="geneSelector" style="display:none"><td>
