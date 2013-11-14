@@ -95,13 +95,19 @@ function initialize() {
                                     var formattedGroup =
                                         // Ensure the group name is unique for the circles denoting a group, and not
                                         // a node, ie. a female and male group will both have a group representing litter 1
-                                        {'name': currLevel[ci].name + parentName,
+                                        {'name': parentName + currLevel[ci].name,
                                          'children': that.format_fxns[format_index]( currLevel[ci].children) };
                                     // A depth first approach in recursion, in which the format_index
                                     // corresponds to depth
                                     if ( (format_index + 1) < that.format_fxns.length) {
-                                        // Overwrite children array with grouped version
+                                        // Overwrite children array with additional hierarchy
                                         formattedGroup.children = applyFormat( formattedGroup.name, formattedGroup.children, format_index + 1);
+                                    }
+                                    else {
+                                        // Modify the leaf 'name' with a parent prefix
+                                        for( var i=0; i < formattedGroup.children.length; i++) {
+                                            formattedGroup.children[i].name = currLevel[ci].name + formattedGroup.children[i].name;
+                                        }
                                     }
                                     innerHierarchy.push( formattedGroup);
                                 }
