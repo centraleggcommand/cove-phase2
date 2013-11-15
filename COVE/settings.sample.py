@@ -12,11 +12,11 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'mice',                      # Or path to database file if using sqlite3.
+        'NAME': 'Mice',                      # Or path to database file if using sqlite3.
         # The following settings are not used with sqlite3:
-        'USER': 'sindhuja',
-        'PASSWORD': '',
-        'HOST': '127.0.0.1',                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
+        'USER': 'web',
+        'PASSWORD': 'web',
+        'HOST': '',                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
         'PORT': '',                      # Set to empty string for default.
     }
 }
@@ -72,7 +72,7 @@ STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-	'/Users/sindhuja/django-project/edit_colony/static',
+	'/home/user/cove/COVE/edit_colony/static',
 )
 
 # List of finder classes that know how to find static files in
@@ -112,15 +112,10 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-
-	'/Users/sindhuja/django-project/edit_colony/templates',
-	'/Users/sindhuja/django-project/viz/templates',
-	'/Users/sindhuja/django-project/edit_colony/templates',
-	'/Users/sindhuja/django-project/viz/templates',
-    '/Users/sindhuja/django-project/menu/templates',
-    '/Users/sindhuja/django-project/breeding_calculator/templates',
-    '/Users/sindhuja/django-project/registrations/templates',
-
+	'/home/user/cove/COVE/edit_colony/templates',
+	'/home/user/cove/COVE/viz/templates',
+    '/home/user/cove/COVE/menu/templates',
+	'/home/user/cove/COVE/breeding_calculator/templates'
 )
 
 INSTALLED_APPS = (
@@ -134,12 +129,7 @@ INSTALLED_APPS = (
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
-    'south',
-    'twitter_bootstrap',
-    'bootstrap_toolkit',
 	'mice_db',
-    'breeding_calculator',
-    'registrations',
 	'django_bootstrap_staticfiles',
 )
 
