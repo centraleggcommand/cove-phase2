@@ -134,18 +134,27 @@ nodeElements.append("circle")
     .attr("r", 4.5)
     .style("fill", function(d) {
         if(d.gender == "F") {
-            return "#FF7575";
+            return "#FF7575";jjjjjjj
         }
         else {
             return "#3366FF";
         }
     })
-    .on("click", function() {
+    .on("mouseover", function() {
+        //undo any previous selection
+        d3.select(".hovered")
+                .classed("hovered", false)
+                .style("stroke", "rgb(150, 150, 150)")
+                .style("stroke-width", "1.0px")
+        d3.select(this)
+                .classed("hovered", true)
+                .style( "stroke", "rgb(250,250,0)")
+                .style("stroke-width", "3px");
+    })
+    .on("dblclick", function() {
         //undo any previous selection
         d3.select(".tooltip").remove();
-        d3.select(".selected").classed("selected", false);
         var curr = d3.select(this)
-        curr.classed("selected", true);
         addTooltip(this);
     });
 
