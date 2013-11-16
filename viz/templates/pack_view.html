@@ -9,8 +9,8 @@
 
 <body>
 
-<script src="http://d3js.org/d3.v3.min.js"></script>
-<script type="text/javascript" src="http://code.jquery.com/jquery-1.6.min.js"></script>
+<script src="/static/d3.v3.min.js"></script>
+<script src="/static/jquery-2.0.3.min.js"></script>
 
 <script>
 
@@ -24,17 +24,17 @@ Function.prototype.curry = function() {
     };
 };
 
-// The var FV is a container for global data to be referenced explicitly.
-var FV = {};
+// The var CV is a container for global data to be referenced explicitly.
+var CV = {};
 
-// Assign values to the FV.fit_scale function and FV.genFoci positions
+// Assign values to the CV.fit_scale function and CV.genFoci positions
 function set_scale_foci( nodeLayouts) {
     // Determine the horizontal spacing for each generation based on root node radius.
     for (var i=0; i < nodeLayouts.length; i++) {
         var currGen = nodeLayouts[i];
         for (var j=0; j < currGen.length; j++) {
             if (currGen[j].depth == 0) {
-                FV.genFoci[i] = {'radius': currGen[j].r,
+                CV.genFoci[i] = {'radius': currGen[j].r,
                     'x': currGen[j].x,
                     'y': currGen[j].y};
                 break;
@@ -44,48 +44,48 @@ function set_scale_foci( nodeLayouts) {
 
     var genPadding = 25;
     // Add diameter of each generation to scale width.
-    var totSpan = FV.genFoci.reduce( function( prev, curr, i, array) {
+    var totSpan = CV.genFoci.reduce( function( prev, curr, i, array) {
         return prev + curr.radius * 2;
     }, 0)
     totSpan = totSpan + (genPadding * (nodeLayouts.length - 1));
     // Get max radius to scale the height.
-    var maxRadius = FV.genFoci.reduce( function( prev, curr, i, array) {
+    var maxRadius = CV.genFoci.reduce( function( prev, curr, i, array) {
         return (prev < curr.radius) ? curr.radius : prev;
     }, 0)
 
     // Create scale function
-    var x_scale = d3.scale.linear().domain([0, totSpan]).range([0, FV.width]);
-    var y_scale = d3.scale.linear().domain([0, maxRadius*2]).range([0, FV.height]);
-    FV.fit_scale = (x_scale(maxRadius) < y_scale(maxRadius)) ? x_scale : y_scale;
+    var x_scale = d3.scale.linear().domain([0, totSpan]).range([0, CV.width]);
+    var y_scale = d3.scale.linear().domain([0, maxRadius*2]).range([0, CV.height]);
+    CV.fit_scale = (x_scale(maxRadius) < y_scale(maxRadius)) ? x_scale : y_scale;
 
     // Assign foci values
     var runningSum = 0; // Keep track of offset from left of graph
-    for (var i=0; i < FV.genFoci.length; i++) {
-        var scaledRadius = FV.fit_scale(FV.genFoci[i].radius);
-        FV.genFoci[i].radius = scaledRadius;
-        FV.genFoci[i]['dx'] = runningSum + scaledRadius - FV.genFoci[i].x;
-        FV.genFoci[i]['dy'] = 0;
+    for (var i=0; i < CV.genFoci.length; i++) {
+        var scaledRadius = CV.fit_scale(CV.genFoci[i].radius);
+        CV.genFoci[i].radius = scaledRadius;
+        CV.genFoci[i]['dx'] = runningSum + scaledRadius - CV.genFoci[i].x;
+        CV.genFoci[i]['dy'] = 0;
         runningSum = runningSum + genPadding + (scaledRadius * 2);
     }
 
 }
 
 function initialize() {
-    FV.allMice = JSON.parse( '{{ jsonAllMice | safe}}');
+    CV.allMice = JSON.parse( '{{ jsonAllMice | safe}}');
     //The allMice object is an array of arrays for generation data, and element a json object.
     //Convert to format for hierarchical packing (1 level for all objects of a generation).
     //Use separate layout for each generation.
-    FV.miceGenData = [];
-    for (var i=0; i < FV.allMice.length; i++) {
-        FV.miceGenData.push( {'name': 'Gen' + i, 'children': FV.allMice[i]});
+    CV.miceGenData = [];
+    for (var i=0; i < CV.allMice.length; i++) {
+        CV.miceGenData.push( {'name': 'Gen' + i, 'children': CV.allMice[i]});
     }
 
     // Mice data format needs to support additional hierarchy such as by gender and litter.
     // Create an object with a field that supplies ordered array of functions to apply to
     // the data in most basic form - grouped by generation.
-    FV.formattedData = { // format_fxns are functions that take one parameter - array of raw data objects
+    CV.formattedData = { // format_fxns are functions that take one parameter - array of raw data objects
                         'format_fxns': [],
-                        'miceData': FV.miceGenData,
+                        'miceData': CV.miceGenData,
                         'get_hierarchy': function() {
                             // Recursive helper fxn
                             var that = this;
@@ -130,25 +130,25 @@ function initialize() {
                         }
     };
 
-    FV.size_by = function() { return 1;}
+    CV.size_by = function() { return 1;}
 
-    FV.width = 950,
-    FV.height = 450;
+    CV.width = 950,
+    CV.height = 450;
 
-    FV.genFoci = [];
+    CV.genFoci = [];
     // Estimate boundary circle of each generation to assign layout size
-    for (var i=0; i < FV.allMice.length; i++) {
+    for (var i=0; i < CV.allMice.length; i++) {
         // Calculate circle size based on number of nodes
-        var totalArea = 64* FV.allMice[i].length;
-        FV.genFoci[i] = {"estimate": Math.sqrt(totalArea) };
+        var totalArea = 64* CV.allMice[i].length;
+        CV.genFoci[i] = {"estimate": Math.sqrt(totalArea) };
     }
 
     // Use the circle packing layout to calculate node positions for each generation.
     var nodeLayouts = [];
-    for (var i=0; i < FV.miceGenData.length; i++) {
-        nodeLayouts.push( d3.layout.pack().size([FV.genFoci[i].estimate * 2, FV.height]).padding(10)
-                .value( FV.size_by)
-                .nodes( FV.miceGenData[i]));
+    for (var i=0; i < CV.miceGenData.length; i++) {
+        nodeLayouts.push( d3.layout.pack().size([CV.genFoci[i].estimate * 2, CV.height]).padding(10)
+                .value( CV.size_by)
+                .nodes( CV.miceGenData[i]));
     }
 
     set_scale_foci( nodeLayouts);
@@ -163,7 +163,7 @@ function handle_color() {
         d3.select("#geneSelector").style("display","inline")
     }
     else if (selected == "gender") {
-        d3.select("#geneSelector").style("display","none")
+        d3.select("#geneSelector").style("display","none");
         update_color( assign_gender_color);
     }
 }
@@ -171,7 +171,7 @@ function handle_color() {
 function handle_size() {
     // Assign a function based on value from selector, and parameter is __data__ obj
     var selVal = this.value;
-    FV.size_by = function(d) {
+    CV.size_by = function(d) {
         if (selVal == "uniform") {
             return 1;
         }
@@ -180,7 +180,8 @@ function handle_size() {
         }
         else return 1;
     }
-    update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
+    CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+    update_view( CV.nodeLayout);
 }
 
 
@@ -244,29 +245,31 @@ function handle_gene() {
 // Callback when user clicks on checkbox to group by gender
 function handle_group_gender() {
     if (this.checked == true) {
-        FV.formattedData.add_format( "genderCheck", create_gender_format);
+        CV.formattedData.add_format( "genderCheck", create_gender_format);
     }
     else {
-        FV.formattedData.remove_format( "genderCheck");
+        CV.formattedData.remove_format( "genderCheck");
     }
-    update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
+    CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+    update_view( CV.nodeLayout);
 }
 
 // Callback when user clicks on checkbox to group by litter
 function handle_group_litter() {
     if (this.checked == true) {
-        FV.formattedData.add_format( "litterCheck", create_litter_format);
+        CV.formattedData.add_format( "litterCheck", create_litter_format);
     }
     else {
-        FV.formattedData.remove_format( "litterCheck");
+        CV.formattedData.remove_format( "litterCheck");
     }
-    update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
+    CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+    update_view( CV.nodeLayout);
 }
 
 function create_initial_view( initNodes) {
-    FV.svg = d3.select("#graph").append("svg")
-            .attr("width", FV.width)
-            .attr("height", FV.height);
+    CV.svg = d3.select("#graph").append("svg")
+            .attr("width", CV.width)
+            .attr("height", CV.height);
 
     // Add event handlers to various view options
     d3.select("#selectColorGroup").on("change", handle_color);
@@ -283,15 +286,15 @@ function create_initial_view( initNodes) {
     else if (colorBy == "genotype") { color_fxn = assign_genotype_color;}
 
     for (var i=0; i < initNodes.length; i++) {
-        var genGrp = FV.svg.append("g").datum(i)
+        var genGrp = CV.svg.append("g").datum(i)
                 .attr("id","g" + i)
-                .attr("transform", "translate(" + FV.genFoci[i].dx + ", " + FV.genFoci[i].dy + ")" );
+                .attr("transform", "translate(" + CV.genFoci[i].dx + ", " + CV.genFoci[i].dy + ")" );
         genGrp.selectAll(".gen" + i).data(initNodes[i])
                 .enter()
                 .append("circle")
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
-                .attr("r", function(d) { return FV.fit_scale(d.r); })
+                .attr("r", function(d) { return CV.fit_scale(d.r); })
                 .classed("node", "true")
                 .classed("gen" + i, "true")
                 .style("stroke", "rgb(150,150,150)")
@@ -303,25 +306,32 @@ function create_initial_view( initNodes) {
                     }
                 })
                 .on("mouseover", function() {
-                    if (d3.select(this).datum().depth != 0) {
+                    var thisNode = d3.select(this);
+                    if (thisNode.datum().mouseId) { //only highlight nodes, not hierarchy circles
                         //undo any previous selection
                         d3.select(".hovered")
                                 .classed("hovered", false)
                                 .style("stroke", "rgb(150, 150, 150)")
-                                .style("stroke-width", "1.0px")
-                        d3.select(this)
+                                .style("stroke-width", "1.0px");
+                        d3.selectAll(".pathHovered")
+                                .classed("pathHovered", false)
+                                .style("stroke", "rgba(255,255,255,0");
+                        thisNode
                                 .classed("hovered", true)
                                 .style( "stroke", "rgb(250,250,0)")
                                 .style("stroke-width", "3px");
+                        d3.selectAll(".src" + thisNode.datum().mouseId)
+                                .classed("pathHovered", true)
+                                .style("stroke", "rgba(170,250,170,0.7");
                     }
                 });
     }
-    FV.svg.selectAll("g")
+    CV.svg.selectAll("g")
             .append("text")
             .attr("text-anchor", "middle")
             .text( function(d) { return "Gen" + d;})
-            .attr("x", function(d) { return FV.genFoci[d].x; })
-            .attr("y", FV.height - 25);
+            .attr("x", function(d) { return CV.genFoci[d].x; })
+            .attr("y", CV.height - 25);
 
 }
 
@@ -379,8 +389,8 @@ function layout_generations( genArray) {
     var nodeLayouts = [];
     for (var i=0; i < genArray.length; i++) {
         // The size for packing is currently based on last boundary circle size
-        nodeLayouts.push( d3.layout.pack().size([FV.genFoci[i].radius * 2, FV.height]).padding(10)
-                .value( FV.size_by)
+        nodeLayouts.push( d3.layout.pack().size([CV.genFoci[i].radius * 2, CV.height]).padding(10)
+                .value( CV.size_by)
                 .nodes( genArray[i]));
     }
     return nodeLayouts;
@@ -391,7 +401,7 @@ function update_view( nodeLayouts) {
     set_scale_foci( nodeLayouts);
     // Update the translation for each generation based on any change in genFoci and radii
     for (var i=0; i < nodeLayouts.length; i++) {
-        d3.select("#g" + i).attr("transform","translate(" + FV.genFoci[i].dx + ", " + FV.genFoci[i].dy + ")" );
+        d3.select("#g" + i).attr("transform","translate(" + CV.genFoci[i].dx + ", " + CV.genFoci[i].dy + ")" );
     }
     // Go through each generation in nodeLayout
     for (var i=0; i < nodeLayouts.length; i++) {
@@ -402,7 +412,7 @@ function update_view( nodeLayouts) {
                 .insert("circle")
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
-                .attr("r", function(d) { return FV.fit_scale(d.r); })
+                .attr("r", function(d) { return CV.fit_scale(d.r); })
                 .classed("gen" + i, "true")
                 .style("stroke", "rgba(150,150,150,0.1)")
                 .style("stroke-width", "1.0px")
@@ -415,7 +425,7 @@ function update_view( nodeLayouts) {
                 .style("stroke", "rgba(150,150,150,0.9)")
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
-                .attr("r", function(d) { return FV.fit_scale(d.r); });
+                .attr("r", function(d) { return CV.fit_scale(d.r); });
     }
 }
 
@@ -428,11 +438,18 @@ function update_color( color_fxn) {
             });
 }
 
+</script>
+
+<script src="/static/arrows.js"></script>
+
+<script>
 $(document).ready( function() {
     create_initial_view( initialize() );
-    FV.formattedData.add_format( "genderCheck", create_gender_format);
-    update_view( layout_generations( FV.formattedData.get_hierarchy() ) );
-
+    CV.formattedData.add_format( "genderCheck", create_gender_format);
+    CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+    update_view( CV.nodeLayout);
+    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    setTimeout( function() { draw_arrows( CV.svg, lines, AR.line_generator);}, 5000);
 }); //end document ready
 
 </script>
