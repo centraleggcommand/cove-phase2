@@ -182,6 +182,8 @@ function handle_size() {
     }
     CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
     update_view( CV.nodeLayout);
+    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
 
@@ -252,6 +254,8 @@ function handle_group_gender() {
     }
     CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
     update_view( CV.nodeLayout);
+    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
 // Callback when user clicks on checkbox to group by litter
@@ -264,6 +268,8 @@ function handle_group_litter() {
     }
     CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
     update_view( CV.nodeLayout);
+    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
 function create_initial_view( initNodes) {
@@ -295,7 +301,7 @@ function create_initial_view( initNodes) {
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
                 .attr("r", function(d) { return CV.fit_scale(d.r); })
-                .classed("node", "true")
+                .classed("node", function(d) { return d.mouseId ? true : false; })
                 .classed("gen" + i, "true")
                 .style("stroke", "rgb(150,150,150)")
                 .style("stroke-width", "1.0px")
@@ -304,25 +310,34 @@ function create_initial_view( initNodes) {
                     else {
                         return color_fxn(d);
                     }
-                })
+                });
+        genGrp.selectAll(".node")
                 .on("mouseover", function() {
                     var thisNode = d3.select(this);
                     if (thisNode.datum().mouseId) { //only highlight nodes, not hierarchy circles
                         //undo any previous selection
-                        d3.select(".hovered")
-                                .classed("hovered", false)
-                                .style("stroke", "rgb(150, 150, 150)")
-                                .style("stroke-width", "1.0px");
-                        d3.selectAll(".pathHovered")
-                                .classed("pathHovered", false)
-                                .style("stroke", "rgba(255,255,255,0");
+                        if (CV.nodeHovered) {
+                            CV.nodeHovered
+                                    .classed("hovered", false)
+                                    .style("stroke", "rgb(150, 150, 150)")
+                                    .style("stroke-width", "1.0px");
+                        }
+                        if (CV.pathsDisplayed) {
+                            CV.pathsDisplayed
+                                    .classed("pathHovered", false)
+                                    .style("stroke", "rgba(255,255,255,0");
+                        }
                         thisNode
                                 .classed("hovered", true)
                                 .style( "stroke", "rgb(250,250,0)")
                                 .style("stroke-width", "3px");
-                        d3.selectAll(".src" + thisNode.datum().mouseId)
+                        CV.nodeHovered = thisNode;
+                        CV.pathsDisplayed = CV.svg.selectAll("path").filter( function(d) {
+                            return (d[0].id == thisNode.datum().mouseId ) ? true : false;
+                        });
+                        CV.pathsDisplayed
                                 .classed("pathHovered", true)
-                                .style("stroke", "rgba(170,250,170,0.7");
+                                .style("stroke", "rgba(130,230,190,0.5");
                     }
                 });
     }
@@ -432,10 +447,7 @@ function update_view( nodeLayouts) {
 // The parameter color_fxn is a function with one parameter - the node data
 function update_color( color_fxn) {
     d3.selectAll(".node").transition()
-            .style("fill", function(d, i) {
-                if (d.depth == 0) { return "rgba(255,255,255,0)"; }
-                else { return color_fxn(d); }
-            });
+            .style("fill", function(d) { return color_fxn(d); });
 }
 
 </script>
