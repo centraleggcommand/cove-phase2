@@ -35,22 +35,29 @@ circle {
 
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script>
-var width = 450,
-    height = 450;
-var margin = 15;
 
-var tree = d3.layout.tree()
-    .size([height -100, width -100]);
+var IV = {}; // Global variable container
 
-var diagonal = d3.svg.diagonal()
+IV.width = 750;
+IV.height = 450;
+IV.treeWidth = 350;
+IV.treeHeight = 350;
+IV.margin = 15;
+IV.infoWidth = IV.width/3;
+IV.infoHeight = IV.height;
+
+IV.tree = d3.layout.tree()
+    .size([IV.treeHeight, IV.treeWidth]);
+
+IV.diagonal = d3.svg.diagonal()
     .projection(function(d) { return [d.y, d.x]; });
 
-var svg = d3.select("body").append("svg")
-    .attr("width", width)
-    .attr("height", height)
+IV.svg = d3.select("body").append("svg")
+    .attr("width", IV.width)
+    .attr("height", IV.height)
   .append("g")
     .attr("id", "plot")
-    .attr("transform", "translate(15,10) rotate(-90 " + (width/2 + 25) + " " + (height/2 - 50) + ")");
+    .attr("transform", "translate(15,10) rotate(-90 " + (IV.treeWidth/2 ) + " " + (IV.treeHeight/2 + 50 ) + ")");
 
 d3.select("body").append("div").attr("id","nodeedit");
 
@@ -111,17 +118,17 @@ function addTooltip(element) {
 
 var root = JSON.parse( '{{ json_lineage|safe }}' );
 console.log(root);
-var nodes = tree.nodes(root);
-var links = tree.links(nodes);
+var nodes = IV.tree.nodes(root);
+var links = IV.tree.links(nodes);
 
-var link = svg.selectAll(".link")
+var link = IV.svg.selectAll(".link")
     .data(links)
   .enter()
 	.append("path")
     .attr("class", "link")
-    .attr("d", diagonal);
+    .attr("d", IV.diagonal);
 
-var nodeElements = svg.selectAll(".node")
+var nodeElements = IV.svg.selectAll(".node")
     .data(nodes)
   .enter().append("g")
     .attr("class", "node")
@@ -134,7 +141,7 @@ nodeElements.append("circle")
     .attr("r", 4.5)
     .style("fill", function(d) {
         if(d.gender == "F") {
-            return "#FF7575";jjjjjjj
+            return "#FF7575";
         }
         else {
             return "#3366FF";
@@ -142,14 +149,37 @@ nodeElements.append("circle")
     })
     .on("mouseover", function() {
         //undo any previous selection
-        d3.select(".hovered")
-                .classed("hovered", false)
-                .style("stroke", "rgb(150, 150, 150)")
-                .style("stroke-width", "1.0px")
-        d3.select(this)
-                .classed("hovered", true)
+            d3.select(".hovered")
+                    .classed("hovered", false)
+                    .style("stroke", "rgb(150, 150, 150)")
+                    .style("stroke-width", "1.0px")
+            var thisNode = d3.select(this);
+            thisNode.classed("hovered", true)
                 .style( "stroke", "rgb(250,250,0)")
                 .style("stroke-width", "3px");
+            if ( d3.select("svg").select(".mouseInfoBack").empty()) {
+                    d3.select("svg")
+                    .append("rect")
+                    .classed("mouseInfoBack", true)
+                    .attr("height", IV.infoHeight)
+                    .attr("width", IV.infoWidth)
+                    .attr("x", IV.width - IV.infoWidth)
+                    .attr("y", 0)
+                    .attr("rx", 20)
+                    .attr("ry", 20)
+                    .style("fill","rgba(250,241,133,0.3");
+            }
+            var infoSel = d3.select("svg").select(".mouseInfo");
+            if (infoSel.empty()) {
+                infoSel = d3.select("svg")
+                        .append("text")
+                        .classed("mouseInfo",true)
+                        .attr("x", IV.width - IV.infoWidth + 10)
+                        .attr("y", 20);
+
+            }
+            //Update details shown
+            infoSel.text("Details of mouse " + thisNode.datum().mouseId);
     })
     .on("dblclick", function() {
         //undo any previous selection
@@ -165,7 +195,7 @@ nodeElements.append("text")
     .text(function(d) { return d.mouseId; })
     .attr("transform", "translate(10,0) rotate(90)");
 
-d3.select(self.frameElement).style("height", height + "px");
+d3.select(self.frameElement).style("height", IV.height + "px");
 
 
 </script>
