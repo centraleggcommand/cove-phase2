@@ -135,6 +135,10 @@ function initialize() {
     CV.width = 950,
     CV.height = 450;
 
+    CV.href_edit = function(val) {
+        return "http://localhost:8000/edit_colony/edit_mouse/?mouseId=" + val;
+    };
+
     CV.genFoci = [];
     // Estimate boundary circle of each generation to assign layout size
     for (var i=0; i < CV.allMice.length; i++) {
@@ -333,11 +337,20 @@ function create_initial_view( initNodes) {
                                 .style("stroke-width", "3px");
                         CV.nodeHovered = thisNode;
                         CV.pathsDisplayed = CV.svg.selectAll("path").filter( function(d) {
-                            return (d[0].id == thisNode.datum().mouseId ) ? true : false;
+                            if ((d[0].id == thisNode.datum().mouseId) || (d[2].id == thisNode.datum().mouseId) ) {
+                                return true;
+                            }
+                            else return false;
                         });
                         CV.pathsDisplayed
                                 .classed("pathHovered", true)
                                 .style("stroke", "rgba(130,230,190,0.5");
+                    }
+                })
+                .on("dblclick", function() {
+                    var thisNode = d3.select(this);
+                    if (thisNode.datum().mouseId) { //ignore hierarchy circles
+                        window.location.href = CV.href_edit( thisNode.datum().mouseId);
                     }
                 });
     }
