@@ -33,7 +33,8 @@ circle {
 
 <body>
 
-<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="/static/d3.v3.min.js"></script>
+
 <script>
 
 var IV = {}; // Global variable container
@@ -44,7 +45,7 @@ IV.treeWidth = 350;
 IV.treeHeight = 350;
 IV.margin = 15;
 IV.infoWidth = IV.width/3;
-IV.infoHeight = IV.height;
+IV.infoHeight = IV.height - 40;
 
 IV.tree = d3.layout.tree()
     .size([IV.treeHeight, IV.treeWidth]);
@@ -157,6 +158,7 @@ nodeElements.append("circle")
             thisNode.classed("hovered", true)
                 .style( "stroke", "rgb(250,250,0)")
                 .style("stroke-width", "3px");
+            var xpos = IV.width - IV.infoWidth;
             if ( d3.select("svg").select(".mouseInfoBack").empty()) {
                     d3.select("svg")
                     .append("rect")
@@ -170,16 +172,43 @@ nodeElements.append("circle")
                     .style("fill","rgba(250,241,133,0.3");
             }
             var infoSel = d3.select("svg").select(".mouseInfo");
+            xpos = xpos + 10;
+            var ypos = 20;
             if (infoSel.empty()) {
                 infoSel = d3.select("svg")
                         .append("text")
                         .classed("mouseInfo",true)
-                        .attr("x", IV.width - IV.infoWidth + 10)
-                        .attr("y", 20);
+                        .attr("x", xpos)
+                        .attr("y", ypos);
 
             }
             //Update details shown
+            ypos = ypos + 30;
             infoSel.text("Details of mouse " + thisNode.datum().mouseId);
+            infoSel.append("tspan").text( "Generation: " + thisNode.datum().generation)
+                    .attr("x", xpos).attr("y", ypos);
+            ypos = ypos + 20;
+            infoSel.append("tspan").text( "Father ID: " + thisNode.datum().fatherId)
+                    .attr("x", xpos).attr("y", ypos);
+            ypos = ypos + 20;
+            infoSel.append("tspan").text( "Mother ID: " + thisNode.datum().motherId)
+                    .attr("x", xpos).attr("y", ypos);
+            ypos = ypos + 20;
+            infoSel.append("tspan").text( "Gender: " + thisNode.datum().gender)
+                    .attr("x", xpos).attr("y", ypos);
+            ypos = ypos + 20;
+            infoSel.append("tspan").text( "Genotype: " )
+                    .attr("x", xpos).attr("y", ypos);
+            xpos = xpos + 20;
+            ypos = ypos + 20;
+            infoSel.append("tspan").text( thisNode.datum().gene1 + " : " + thisNode.datum().genotype1)
+                    .attr("x", xpos).attr("y", ypos);
+            ypos = ypos + 20;
+            infoSel.append("tspan").text( thisNode.datum().gene2 + " : " + thisNode.datum().genotype2)
+                    .attr("x", xpos).attr("y", ypos);
+            ypos = ypos + 20;
+            infoSel.append("tspan").text( thisNode.datum().gene3 + " : " + thisNode.datum().genotype3)
+                    .attr("x", xpos).attr("y", ypos);
     })
     .on("dblclick", function() {
         //undo any previous selection

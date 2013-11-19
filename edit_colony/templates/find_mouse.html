@@ -4,12 +4,12 @@
 
 <head>
 
-<script type="text/javascript" src="http://code.jquery.com/jquery-1.6.min.js"></script>
+<script src="/static/jquery-2.0.3.min.js"></script>
 <link rel="stylesheet" type="text/css" href="/static/form.css">
 
 <script>
-    $(document).ready( function() {
-        $("#btnMouse").click( function() {
+
+    var submit_fxn = function() {
             if ($("#txtMouse").val()) {
                 if ($("#editsection").find("iframe").length > 0) {
                     //var ifrSource = '/edit_colony/edit_mouse/?mouseId=' + $("#txtMouse").val();
@@ -20,6 +20,14 @@
                     $("#editsection").append('<iframe src="{{ iSrc }}?mouseId=' +
                         $("#txtMouse").val() + '" height="400" width="100%"></iframe>');
                 }
+            }
+    }
+
+    $(document).ready( function() {
+        $("#btnMouse").click(submit_fxn );
+        $('#txtMouse').bind('keydown', function(e) {
+            if (e.which == 13) { // 'Enter' key pressed
+                submit_fxn();
             }
         });
     });
