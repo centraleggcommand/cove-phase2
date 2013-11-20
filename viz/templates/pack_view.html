@@ -135,7 +135,7 @@ function initialize() {
     CV.width = 950,
     CV.height = 450;
 
-    CV.href_edit = function(val) {
+    CV.href_individual = function(val) {
         return "http://localhost:8000/viz/lineage_view/?mouseId=" + val;
     };
 
@@ -350,7 +350,7 @@ function create_initial_view( initNodes) {
                 .on("dblclick", function() {
                     var thisNode = d3.select(this);
                     if (thisNode.datum().mouseId) { //ignore hierarchy circles
-                        window.location.href = CV.href_edit( thisNode.datum().mouseId);
+                        window.location.href = CV.href_individual( thisNode.datum().mouseId);
                     }
                 });
     }

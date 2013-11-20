@@ -60,6 +60,10 @@ IV.svg = d3.select("body").append("svg")
     .attr("id", "plot")
     .attr("transform", "translate(15,10) rotate(-90 " + (IV.treeWidth/2 ) + " " + (IV.treeHeight/2 + 50 ) + ")");
 
+IV.href_edit = function(val) {
+        return "http://localhost:8000/edit_colony/edit_mouse/?mouseId=" + val;
+    };
+
 d3.select("body").append("div").attr("id","nodeedit");
 
 function addIframeEdit(selectedId) {
@@ -212,9 +216,10 @@ nodeElements.append("circle")
     })
     .on("dblclick", function() {
         //undo any previous selection
-        d3.select(".tooltip").remove();
-        var curr = d3.select(this)
-        addTooltip(this);
+        //d3.select(".tooltip").remove();
+        //var curr = d3.select(this)
+        //addTooltip(this);
+            window.location.href = IV.href_edit( d3.select(this).datum().mouseId);
     });
 
 nodeElements.append("text")
