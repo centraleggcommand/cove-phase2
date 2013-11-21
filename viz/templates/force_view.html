@@ -89,8 +89,8 @@ $(document).ready( function() {
     FV.force = d3.layout.force()
             .nodes( FV.layoutNodes )// Show only root generation then add others incrementally.
             .size([FV.width, FV.height])
-            .charge(-10)
-            .gravity(0)
+            .charge(-20)
+            .gravity(0.05)
             .on("tick", tick)
             .start();
 
