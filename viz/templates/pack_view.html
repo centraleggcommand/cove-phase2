@@ -24,6 +24,16 @@ Function.prototype.curry = function() {
     };
 };
 
+// General function to determine if an object is empty
+function is_empty( obj) {
+    for (var prop in obj) {
+        if (obj.hasOwnProperty(prop) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // The var CV is a container for global data to be referenced explicitly.
 var CV = {};
 
@@ -206,7 +216,7 @@ function assign_gender_color( d) {
 function assign_genotype_color( selections, d) {
     var unmatched = "#FFFFFF";
     var match = "#00AA00";
-    // Try to eliminate by looking for mismatch with selection values
+    // Try to eliminate by looking for mismatch with selection values since all or no match
     if (d.gene1 in selections) {
         if (d.genotype1 != selections[d.gene1]) {
             return unmatched;
@@ -276,6 +286,20 @@ function handle_group_litter() {
     draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
+// Callback when user clicks on checkbox to group by litter
+function handle_group_gene() {
+    if (this.checked == true) {
+        CV.formattedData.add_format( "geneCheck", create_gene_format);
+    }
+    else {
+        CV.formattedData.remove_format( "geneCheck");
+    }
+    CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+    update_view( CV.nodeLayout);
+    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    draw_arrows( CV.svg, lines, AR.line_generator);
+}
+
 function create_initial_view( initNodes) {
     CV.svg = d3.select("#graph").append("svg")
             .attr("width", CV.width)
@@ -286,6 +310,7 @@ function create_initial_view( initNodes) {
     d3.select("#selectSizeBy").on("change", handle_size);
     d3.select("#genderCheck").on("click", handle_group_gender);
     d3.select("#litterCheck").on("click", handle_group_litter);
+    d3.select("#geneCheck").on("click", handle_group_gene);
     d3.selectAll("#geneSelector input").on("click", handle_gene);
 
     // Use default color selection indicated by DOM dropdown element
@@ -293,7 +318,7 @@ function create_initial_view( initNodes) {
     var colorBy = colorOption.options[colorOption.selectedIndex].value;
     var color_fxn;
     if (colorBy == "gender") { color_fxn = assign_gender_color; }
-    else if (colorBy == "genotype") { color_fxn = assign_genotype_color;}
+    else if (colorBy == "genotype") { color_fxn = assign_genotype_color.curry( {});}
 
     for (var i=0; i < initNodes.length; i++) {
         var genGrp = CV.svg.append("g").datum(i)
@@ -410,6 +435,52 @@ function create_litter_format( rawNodes) {
     return litterGroup;
 }
 
+function create_gene_format( rawNodes) {
+    var selections = {};
+    // Create a dictionary of genes with selected values
+    d3.selectAll("#geneSelector input").each( function() {
+        if (this.checked == true) {
+            selections[this.name] = this.value;
+        }
+    })
+    if (is_empty(selections)) {
+        return rawNodes;
+    }
+    var inGrp = [];
+    var outGrp = [];
+    function check_grp( node, selections) {
+        // Try to eliminate by looking for mismatch with selection values since all or no match
+        if (node.gene1 in selections) {
+            if (node.genotype1 != selections[node.gene1]) {
+                return false;
+            }
+        }
+        if (node.gene2 in selections) {
+            if (node.genotype2 != selections[node.gene2]) {
+                return false;
+            }
+        }
+        if (node.gene3 in selections) {
+            if (node.genotype3 != selections[node.gene3]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    for (var i=0; i < rawNodes.length; i++) {
+        if ( check_grp(rawNodes[i], selections) ) {
+            inGrp.push(rawNodes[i]);
+        }
+        else {
+            outGrp.push(rawNodes[i]);
+        }
+    }
+    var geneGrp = [];
+    if (inGrp.length > 0) { geneGrp.push( {'name': 'genotypeMatch', 'children': inGrp}); }
+    if (outGrp.length > 0) { geneGrp.push( {'name': 'genotypeNoMatch', 'children': outGrp}); }
+    return geneGrp;
+}
+
 // Take an array of objects, with each object representing a generation, and having a children field.
 // Return an array of an array of objects that have data for position and size.
 function layout_generations( genArray) {
@@ -494,6 +565,9 @@ $(document).ready( function() {
     </td>
     <td>
         <input type="checkbox" id="litterCheck" value="litter">Litter
+    </td>
+    <td>
+        <input type="checkbox" id="geneCheck" value="genotype">Genotype
     </td>
     <td>
         <label><b>Circle Size By: </b></label>
