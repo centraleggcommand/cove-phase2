@@ -1,8 +1,18 @@
 <html>
 <head>
+    {% load staticfiles %}
+    <!-- Bootstrap core CSS -->
+    <link href="{% static 'css/bootstrap.css' %}" type="text/css" rel="stylesheet">
+    <!-- Add custom CSS here -->
+    <link href="{% static 'css/forms.css' %}" type="text/css" rel="stylesheet">
     <title>Breeding Calculator</title>
 </head>
 <body>
+    {% load staticfiles %}
+    <!-- Bootstrap core CSS -->
+    <link href="{% static 'css/bootstrap.css' %}" type="text/css" rel="stylesheet">
+    <!-- Add custom CSS here -->
+    <link href="{% static 'css/forms.css' %}" type="text/css" rel="stylesheet">
 	{% if form.errors %}
 	    <p style="color: red;">
 	    	Please correct the error{{ form.errors|pluralize }} below.
@@ -10,6 +20,7 @@
     {% endif %}
 
     <form action="" method="post">
+        <br>
     	<table>
     		{{ form.as_table }}
     	</table>
