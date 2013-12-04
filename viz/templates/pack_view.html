@@ -204,7 +204,7 @@ function assign_gender_color( d) {
 // This function is meant to be curried, since the selections should not have to be looked up
 // for every node that this function is called for.
 function assign_genotype_color( selections, d) {
-    var unmatched = "#C0C0C0";
+    var unmatched = "#FFFFFF";
     var match = "#00AA00";
     // Try to eliminate by looking for mismatch with selection values
     if (d.gene1 in selections) {
