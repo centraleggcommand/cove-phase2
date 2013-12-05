@@ -1,4 +1,5 @@
 from django.conf.urls import patterns, include, url
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -22,3 +23,5 @@ urlpatterns = patterns('',
     url(r'^register/', include( 'registrations.urls')),
     url(r'^breeding_calculator/', include( 'breeding_calculator.urls')),
 )
+
+urlpatterns += staticfiles_urlpatterns()

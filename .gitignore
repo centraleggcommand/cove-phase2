@@ -1,3 +1,5 @@
 # Ignore auto generated python files
 *.pyc
 .idea/
+venv
+staticfiles
