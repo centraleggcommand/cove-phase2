@@ -110,15 +110,16 @@ ROOT_URLCONF = 'COVE.urls'
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'COVE.wsgi.application'
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-	'/home/user/cove/COVE2/edit_colony/templates',
-	'/home/user/cove/COVE2/viz/templates',
-    '/home/user/cove/COVE2/menu/templates',
-    '/home/user/cove/COVE2/home/templates',
-	'/home/user/cove/COVE2/breeding_calculator/templates'
+	os.path.join(BASE_DIR, 'COVE2/edit_colony/templates'),
+	os.path.join(BASE_DIR, 'COVE2/viz/templates'),
+    os.path.join(BASE_DIR, 'COVE2/menu/templates'),
+    os.path.join(BASE_DIR, 'COVE2/home/templates'),
+	os.path.join(BASE_DIR, 'COVE2/breeding_calculator/templates'),
 )
 
 INSTALLED_APPS = (
