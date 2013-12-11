@@ -27,6 +27,7 @@ def draw_lineage(request):
             json_lineage = vizd.get_json_lineage(request.GET["mouseId"])
             contextVars = {'json_lineage': json_lineage,
                            'iSrcEdit':"/edit_colony/edit_mouse/",
+                           'curr_domain': request.get_host(),
             }
             return render(request, 'lineage_view.html', contextVars)
         except Mouse.DoesNotExist:
@@ -49,5 +50,6 @@ def draw_pack(request):
     if request.method == "GET":
         # Need data of all mice in json format
         jsonAllMice = vizd.all_mice_gen()
-        contextVars = {'jsonAllMice': jsonAllMice}
+        contextVars = {'jsonAllMice': jsonAllMice,
+					   'curr_domain': request.get_host()}
         return render(request, 'pack_view.html', contextVars)

@@ -61,7 +61,7 @@ IV.svg = d3.select("body").append("svg")
     .attr("transform", "translate(15,10) rotate(-90 " + (IV.treeWidth/2 ) + " " + (IV.treeHeight/2 + 50 ) + ")");
 
 IV.href_edit = function(val) {
-        return "http://localhost:8000/edit_colony/edit_mouse/?mouseId=" + val;
+        return "http://{{ curr_domain }}/edit_colony/edit_mouse/?mouseId=" + val;
     };
 
 d3.select("body").append("div").attr("id","nodeedit");

@@ -147,7 +147,7 @@ function initialize() {
     CV.height = 450;
 
     CV.href_individual = function(val) {
-        return "http://localhost:8000/viz/lineage_view/?mouseId=" + val;
+        return "http://{{ curr_domain }}/viz/lineage_view/?mouseId=" + val;
     };
 
     CV.genFoci = [];
