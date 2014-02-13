@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+
+<!-- Reference http://bl.ocks.org/mbostock/1021841 -->
+<head>
+
+<meta charset="utf-8">
+
+<script src="/static/d3.v3.min.js"></script>
+<script src="/static/jquery-2.0.3.min.js"></script>
+<link rel="stylesheet" href="/static/jquery-ui-1.10.4/themes/base/jquery.ui.base.css">
+<link refl="stylesheet" href="/static/jquery-ui-1.10.4/themes/base/jquery.ui.theme.css">
+<link refl="stylesheet" href="/static/jquery-ui-1.10.4/themes/base/jquery.ui.tabs.css">
+<script src="/static/jquery-ui-1.10.4/ui/minified/jquery.ui.core.min.js"></script>
+<script src="/static/jquery-ui-1.10.4/ui/minified/jquery.ui.widget.min.js"></script>
+<script src="/static/jquery-ui-1.10.4/ui/minified/jquery.ui.tabs.min.js"></script>
+<script src="/static/arrows.js"></script>
+<script src="/static/colony_view.js"></script>
+<script type="text/javascript">
+	$(document).ready(function(){
+        $("#tabs").tabs();
+	    $("#tabset-tab").click(function(){
+			var $panel = $("#tabs");
+			if( $panel.hasClass("open") ) {
+	        	$panel.animate({"left":"-341px"}, "slow");
+                $(this).animate({"left":"0px"}, "slow");
+			}
+			else {
+	        	$panel.animate({"left":"0px"}, "slow");
+                $(this).animate({"left":"+=340px"}, "slow");
+			}
+	        $panel.toggleClass("open");
+	        $(this).toggleClass("active");
+	        return false;
+	    });
+	});
+</script>
+
+<link rel="stylesheet" type="text/css" href="/static/palette.css">
+
+</head>
+
+<body>
+
+<script>
+$(document).ready( function() {
+    create_initial_view( initialize('{{ jsonAllMice | safe}}', '{{ curr_domain }}') );
+    CV.formattedData.add_format( "genderCheck", create_gender_format);
+    CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+    update_view( CV.nodeLayout);
+    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    setTimeout( function() { draw_arrows( CV.svg, lines, AR.line_generator);}, 5000);
+}); //end document ready
+
+</script>
+
+<div id="graph"></div>
+
+<div id="tabs">
+    <ul>
+        <li> <a href="#filter-tab-panel">Filter</a></li>
+        <li> <a href="#group-tab-panel">Group</a></li>
+        <li> <a href="#image-tab-panel">Image</a></li>
+    </ul>
+    <div id="filter-tab-panel" >
+    	<h3>My Filter Panel</h3>
+    </div>
+    <div id="group-tab-panel" >
+    	<h3>My Group Panel</h3>
+        <table>
+        <tr> <td>
+            <input type="checkbox" id="genderCheck" value="gender" checked="true">Gender
+        </td></tr>
+        <tr><td>
+            <input type="checkbox" id="litterCheck" value="litter">Litter
+        </td></tr>
+        <tr><td>
+            <input type="checkbox" id="geneCheck" value="genotype">Genotype
+        </td></tr>
+        </table>
+    </div>
+    <div id="image-tab-panel" >
+    	<h3>My Image Panel</h3>
+        <table cellspacing="10">
+            <tr><td>
+                <label><b>Circle Size By: </b></label>
+                <select id="selectSizeBy">
+                    <option value="uniform">Uniform</option>
+                    <option value="children">Number of children</option>
+                </select>
+            </td> </tr>
+            <tr><td>
+                <label><b>Color By: </b></label>
+                <select id="selectColorGroup">
+                    <option value="gender" selected="true">Gender</option>
+                    <option value="genotype">Genotype</option>
+                </select>
+            </td></tr>
+            <tr id="geneSelector" style="display:none"><td>
+                <label>LEF1</label><br>
+                <input type="checkbox" name="LEF1" value="+/-">+/-<br>
+                <input type="checkbox" name="LEF1" value="-/-">-/-<br>
+                <input type="checkbox" name="LEF1" value="WT">WT<br>
+                <input type="checkbox" name="LEF1" value="NA">NA<br>
+            </td><td>
+                <label>RANKL</label><br>
+                <input type="checkbox" name="RANKL" value="+/-">+/-<br>
+                <input type="checkbox" name="RANKL" value="-/-">-/-<br>
+                <input type="checkbox" name="RANKL" value="WT">WT<br>
+                <input type="checkbox" name="RANKL" value="NA">NA<br>
+            </td><td>
+                <label>PTHrP</label><br>
+                <input type="checkbox" name="PTHrP" value="+/-">+/-<br>
+                <input type="checkbox" name="PTHrP" value="-/-">-/-<br>
+                <input type="checkbox" name="PTHrP" value="WT">WT<br>
+                <input type="checkbox" name="PTHrp" value="NA">NA<br>
+            </td></tr>
+        </table>
+    </div>
+</div>
+
+<a id="tabset-tab" class="menu-tab" href="#">Interaction</a>
+
+</body>
+</html>

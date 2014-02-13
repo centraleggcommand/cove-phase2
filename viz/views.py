@@ -53,3 +53,11 @@ def draw_pack(request):
         contextVars = {'jsonAllMice': jsonAllMice,
 					   'curr_domain': request.get_host()}
         return render(request, 'pack_view.html', contextVars)
+
+def draw_colony(request):
+    if request.method == "GET":
+        # Need data of all mice in json format
+        jsonAllMice = vizd.all_mice_gen()
+        contextVars = {'jsonAllMice': jsonAllMice,
+					   'curr_domain': request.get_host()}
+        return render(request, 'colony.html', contextVars)
