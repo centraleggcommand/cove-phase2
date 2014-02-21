@@ -17,6 +17,7 @@
 <script src="/static/colony_view.js"></script>
 <script type="text/javascript">
 	$(document).ready(function(){
+        /* Create hideable tabbed menu of options to interact with the viz */
         $("#tabs").tabs();
 	    $("#tabset-tab").click(function(){
 			var $panel = $("#tabs");
@@ -63,6 +64,15 @@ $(document).ready( function() {
     </ul>
     <div id="filter-tab-panel" >
     	<h3>My Filter Panel</h3>
+        <table>
+        <tr id="genderFilter"> <td>
+            <input type="checkbox" id="maleFilter" name="gender" value="M" checked="false">Male
+            </td>
+            <td>
+            <input type="checkbox" id="femaleFilter" name="gender" value="F" checked="false">Female
+            </td>
+        </td></tr>
+        </table>
     </div>
     <div id="group-tab-panel" >
     	<h3>My Group Panel</h3>

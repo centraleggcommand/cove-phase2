@@ -83,7 +83,7 @@ function initialize( miceData, currDomain) {
     // the data in most basic form - grouped by generation.
     CV.formattedData = { // format_fxns are functions that take one parameter - array of raw data objects
                         'format_fxns': [],
-                        'miceData': CV.miceGenData,
+                        'filter_fxns': [],
                         'get_hierarchy': function() {
                             // Recursive helper fxn
                             var that = this;
@@ -113,11 +113,20 @@ function initialize( miceData, currDomain) {
                                 }
                                 return innerHierarchy;
                             };
-                            if (this.format_fxns.length == 0) {
-                                return this.miceData;
+                            // Apply any filters
+                            for (var fi=0; fi < this.filter_fxns.length; fi++ ) {
+                                // Filter members of each generation
+                                for (var fj=0; fj < CV.allMice.length; fj++) {
+                                    CV.miceGenData[fj].children = this.filter_fxns[fi]( CV.allMice[fj]);
+                                }
                             }
+
+                            if (this.format_fxns.length == 0) {
+                                return CV.miceGenData;
+                            }
+
                             // Recursively apply format
-                            return applyFormat( '',this.miceData, 0);
+                            return applyFormat( '',CV.miceGenData, 0);
                         },
                         // The id parameter needs to correlate with DOM checkbox that uses the 'fmt' function
                         'add_format': function( id, fmt) {
@@ -127,6 +136,14 @@ function initialize( miceData, currDomain) {
                         },
                         'remove_format': function( id) {
                             this.format_fxns = this.format_fxns.filter( function( elem) { return elem.id != id; });
+                        },
+                        'add_filter': function( id, filterfxn) {
+                            // Attach the id as an attribute belonging to the fmt function object
+                            filterfxn.id = id;
+                            this.filter_fxns.push( filterfxn);
+                        },
+                        'remove_filter': function( id) {
+                            this.filter_fxns = this.filter_fxns.filter( function( elem) { return elem.id != id; });
                         }
     };
 
@@ -290,6 +307,34 @@ function handle_group_gene() {
     draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
+// Callback when gender filter is clicked
+function handle_filter_gender() {
+    var that = this; // 'that' is used for closure
+    // The 'this' context here is for element clicked.
+    // Remove any previous filter for gender because user is either changing filter value,
+    // or unchecking a filter.
+    CV.formattedData.remove_filter( "filterGender");
+    if (this.checked == true) {
+        CV.formattedData.add_filter( "filterGender", perform_filter.curry(this.name, this.value) );
+    }
+
+    d3.selectAll("#genderFilter input").each( function() {
+        // Uncheck a previous value
+        if (this.checked == true) {
+            if ( (this.name == that.name) && (this.value != that.value) ) {
+                this.checked = false;
+            }
+        }
+    });
+    
+    // Re-draw
+    CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+    update_view( CV.nodeLayout);
+    //update_color();
+    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    draw_arrows( CV.svg, lines, AR.line_generator);
+}
+
 function create_initial_view( initNodes) {
     CV.svg = d3.select("#graph").append("svg")
             .attr("width", CV.width)
@@ -302,13 +347,13 @@ function create_initial_view( initNodes) {
     d3.select("#litterCheck").on("click", handle_group_litter);
     d3.select("#geneCheck").on("click", handle_group_gene);
     d3.selectAll("#geneSelector input").on("click", handle_gene);
+    d3.selectAll("#genderFilter input").on("click", handle_filter_gender);
 
     // Use default color selection indicated by DOM dropdown element
     var colorOption = d3.select("#selectColorGroup").node();
     var colorBy = colorOption.options[colorOption.selectedIndex].value;
-    var color_fxn;
-    if (colorBy == "gender") { color_fxn = assign_gender_color; }
-    else if (colorBy == "genotype") { color_fxn = assign_genotype_color.curry( {});}
+    if (colorBy == "gender") { CV.color_fxn = assign_gender_color; }
+    else if (colorBy == "genotype") { CV.color_fxn = assign_genotype_color.curry( {});}
 
     for (var i=0; i < initNodes.length; i++) {
         var genGrp = CV.svg.append("g").datum(i)
@@ -327,7 +372,7 @@ function create_initial_view( initNodes) {
                 .style("fill", function(d, i) {
                     if (d.depth == 0) { return "rgba(255,255,255,0)"; }
                     else {
-                        return color_fxn(d);
+                        return CV.color_fxn(d);
                     }
                 });
         genGrp.selectAll(".node")
@@ -473,6 +518,10 @@ function create_gene_format( rawNodes) {
     return geneGrp;
 }
 
+function perform_filter( attrName, attrVal, rawNodes) {
+    return rawNodes.filter( function( elem) { return elem[attrName] != attrVal; });
+}
+
 // Take an array of objects, with each object representing a generation, and having a children field.
 // Return an array of an array of objects that have data for position and size.
 function layout_generations( genArray) {
@@ -504,10 +553,11 @@ function update_view( nodeLayouts) {
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
                 .attr("r", function(d) { return CV.fit_scale(d.r); })
+                .classed("node", function(d) { return d.mouseId ? true : false; })
                 .classed("gen" + i, "true")
                 .style("stroke", "rgba(150,150,150,0.1)")
                 .style("stroke-width", "1.0px")
-                .style("fill", "rgba(255,255,255,0)" );
+                .style("fill", function(d) { return d.mouseId ? CV.color_fxn(d) : "rgba(255,255,255,0)";} );
         // Remove any hierarchy circles not needed
         genSelect.exit()
                 .transition().duration(1200).style("stroke", "rgba(150, 150, 150, .2").remove();
@@ -523,6 +573,10 @@ function update_view( nodeLayouts) {
 
 // The parameter color_fxn is a function with one parameter - the node data
 function update_color( color_fxn) {
+    if (typeof color_fxn !== 'undefined') {
+        CV.color_fxn = color_fxn;
+    }
     d3.selectAll(".node").transition()
-            .style("fill", function(d) { return color_fxn(d); });
+            .style("fill", function(d) { return CV.color_fxn(d); });
 }
+

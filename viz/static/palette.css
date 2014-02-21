@@ -4,7 +4,7 @@ border:1px solid #111111;
 width: 330px;
 height: auto;
 padding: 30px 30px 30px 30px;
-opacity: .85;
+opacity: .55;
 }
 
 a.menu-tab{
@@ -51,7 +51,8 @@ width: 340px;
 }
 
 .ui-widget-content{
-background: #f0f0f9;
+/* background: #f0f0f9;*/
+background: rgba(150,150,200,0.5);
 }
 
 .ui-state-default, .ui-widget-content .ui-state-default{
@@ -61,5 +62,6 @@ background: #a2a2a2;
 
 .ui-state-active, .ui-widget-content .ui-state-active{
 border: 1px solid #aaa;
-background: #f0f0f9;
+background: rgba(150,150,200,0.5);
+}
 }
