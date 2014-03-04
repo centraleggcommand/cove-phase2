@@ -95,7 +95,7 @@ function find_endpoints( nodeLayout, genFoci)  {
 //  - svg is a d3 selection of object to append paths to
 //  - lines is the result of function find_endpoints
 function draw_arrows( svg, lines, line_fxn) {
-        var pathSel = svg.selectAll("path").data(lines, function(d) {
+    var pathSel = svg.selectAll("path").data(lines, function(d) {
             return d[0].id + d[2].id;
         });
     pathSel.enter()
@@ -104,8 +104,9 @@ function draw_arrows( svg, lines, line_fxn) {
         .attr("fill", "none")
         .style("stroke", "rgba(255,255,255,0)")
         .style("stroke-width", 1)
-        .style("pointer-events", "none")
+        .style("pointer-events", "none");
+    var removed = pathSel.exit().remove();
     pathSel
         .attr("d", function(d) { return line_fxn(d); })
-        .style("stroke", "rgba(255,255,255,0)")
+        .style("stroke", "rgba(255,255,255,0)");
 }
