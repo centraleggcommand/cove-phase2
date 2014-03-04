@@ -445,6 +445,17 @@ function handle_all_geno_filter() {
     this.disabled = true;
     d3.selectAll(".userAddedFilter")
         .property("checked",false); 
+    for (var fi=0; fi < CV.active_genotype_filters.length; fi++) {
+        CV.disabled_genotype_filters.push( CV.active_genotype_filters[fi]);
+    }
+    CV.active_genotype_filters = [];
+    CV.formattedData.remove_filter( "genotypeFilter");
+    // Re-draw
+    CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+    update_view( CV.nodeLayout);
+    //update_color();
+    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
 function handle_user_filter() {
@@ -727,7 +738,6 @@ function create_gene_format( rawNodes) {
 }
 
 function add_genotype_filter( id, add_fxn) {
-
     add_fxn.id = id;
     CV.active_genotype_filters.push(add_fxn );
 }
