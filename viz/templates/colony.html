@@ -65,12 +65,47 @@ $(document).ready( function() {
     <div id="filter-tab-panel" >
     	<h3>My Filter Panel</h3>
         <table>
+        <tr><td><label><b>Gender</b></label></td></tr>
         <tr id="genderFilter"> <td>
-            <input type="checkbox" id="maleFilter" name="gender" value="M" checked="false">Male
+            <input type="radio" name="gender" value="All" checked="true">All
+            </td> <td>
+            <input type="radio" name="gender" value="M" >Male
+            </td> <td>
+            <input type="radio" name="gender" value="F" >Female
             </td>
-            <td>
-            <input type="checkbox" id="femaleFilter" name="gender" value="F" checked="false">Female
-            </td>
+        </tr>
+        </table>
+        <table>
+        <tr><td><label><b>Genotype</b></label></td></tr>
+        <tr> <td>
+            <input id="allGeno" type="checkbox" name="genotypeFilter" value="All" checked="true" disabled="true">All
+        </td> </tr>
+        <tr><td>
+            <table id="userFilters">
+            </table>
+        </td></tr>
+        <tr id="geneSelector" class="genotypeDesc" style="display:none"><td>
+            <label>LEF1</label><br>
+            <input type="checkbox" name="LEF1" value="+/-">+/-<br>
+            <input type="checkbox" name="LEF1" value="-/-">-/-<br>
+            <input type="checkbox" name="LEF1" value="WT">WT<br>
+        </td><td>
+            <label>RANKL</label><br>
+            <input type="checkbox" name="RANKL" value="+/-">+/-<br>
+            <input type="checkbox" name="RANKL" value="-/-">-/-<br>
+            <input type="checkbox" name="RANKL" value="WT">WT<br>
+        </td><td>
+            <label>PTHrP</label><br>
+            <input type="checkbox" name="PTHrP" value="+/-">+/-<br>
+            <input type="checkbox" name="PTHrP" value="-/-">-/-<br>
+            <input type="checkbox" name="PTHrP" value="WT">WT<br>
+        </td></tr>
+        <tr id="doneRow" class="genotypeDesc" style="display:none"><td>
+            <input id="doneGenotypeFilter" type="button" value="Done">
+        </td></tr>
+        <tr><td>
+            <input id="addGenotypeFilter" type="image" src="/static/img/plus.png" alt="Add" width="24" height="24">
+            Add filter
         </td></tr>
         </table>
     </div>
@@ -105,30 +140,13 @@ $(document).ready( function() {
                     <option value="genotype">Genotype</option>
                 </select>
             </td></tr>
-            <tr id="geneSelector" style="display:none"><td>
-                <label>LEF1</label><br>
-                <input type="checkbox" name="LEF1" value="+/-">+/-<br>
-                <input type="checkbox" name="LEF1" value="-/-">-/-<br>
-                <input type="checkbox" name="LEF1" value="WT">WT<br>
-                <input type="checkbox" name="LEF1" value="NA">NA<br>
-            </td><td>
-                <label>RANKL</label><br>
-                <input type="checkbox" name="RANKL" value="+/-">+/-<br>
-                <input type="checkbox" name="RANKL" value="-/-">-/-<br>
-                <input type="checkbox" name="RANKL" value="WT">WT<br>
-                <input type="checkbox" name="RANKL" value="NA">NA<br>
-            </td><td>
-                <label>PTHrP</label><br>
-                <input type="checkbox" name="PTHrP" value="+/-">+/-<br>
-                <input type="checkbox" name="PTHrP" value="-/-">-/-<br>
-                <input type="checkbox" name="PTHrP" value="WT">WT<br>
-                <input type="checkbox" name="PTHrp" value="NA">NA<br>
-            </td></tr>
         </table>
     </div>
 </div>
 
 <a id="tabset-tab" class="menu-tab" href="#">Interaction</a>
+
+<div id="mouseInfoDiv"></div>
 
 </body>
 </html>

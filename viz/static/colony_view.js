@@ -68,89 +68,124 @@ function set_scale_foci( nodeLayouts) {
 
 }
 
+// Function to create the minimal object structure needed for circle packing
+function mice_data_format( data) {
+    var dataFormatted = [];
+    for (var i=0; i < data.length; i++) {
+        dataFormatted.push( {'name': 'Gen' + i, 'children': data[i]});
+    }
+    return dataFormatted;
+}
+
 function initialize( miceData, currDomain) {
     CV.allMice = JSON.parse( miceData);
     //The allMice object is an array of arrays for generation data, and element a json object.
     //Convert to format for hierarchical packing (1 level for all objects of a generation).
     //Use separate layout for each generation.
-    CV.miceGenData = [];
-    for (var i=0; i < CV.allMice.length; i++) {
-        CV.miceGenData.push( {'name': 'Gen' + i, 'children': CV.allMice[i]});
-    }
+    CV.miceGenData = mice_data_format( CV.allMice);
 
     // Mice data format needs to support additional hierarchy such as by gender and litter.
-    // Create an object with a field that supplies ordered array of functions to apply to
-    // the data in most basic form - grouped by generation.
-    CV.formattedData = { // format_fxns are functions that take one parameter - array of raw data objects
-                        'format_fxns': [],
-                        'filter_fxns': [],
-                        'get_hierarchy': function() {
-                            // Recursive helper fxn
-                            var that = this;
-                            var applyFormat = function( parentName, currLevel, format_index) {
-                                var innerHierarchy = [];
-                                for (var ci=0; ci < currLevel.length; ci++) {
-                                    var formattedGroup =
-                                        // Ensure the group name is unique for the circles denoting a group, and not
-                                        // a node, ie. a female and male group will both have a group representing litter 1
-                                        {'name': parentName + currLevel[ci].name,
-                                         'colorGroup': typeof currLevel[ci].colorGroup !== 'undefined' ?
-                                            currLevel[ci].colorGroup : 'rgba(150,150,150,.9)',
-                                         'children': that.format_fxns[format_index]( currLevel[ci].children) };
-                                    // A depth first approach in recursion, in which the format_index
-                                    // corresponds to depth
-                                    if ( (format_index + 1) < that.format_fxns.length) {
-                                        // Overwrite children array with additional hierarchy
-                                        formattedGroup.children = applyFormat( formattedGroup.name, formattedGroup.children, format_index + 1);
-                                    }
-                                    else {
-                                        // Modify the leaf 'name' with a parent prefix
-                                        for( var i=0; i < formattedGroup.children.length; i++) {
-                                            formattedGroup.children[i].name = currLevel[ci].name + formattedGroup.children[i].name;
-                                        }
-                                    }
-                                    innerHierarchy.push( formattedGroup);
-                                }
-                                return innerHierarchy;
-                            };
-                            // Apply any filters
-                            for (var fi=0; fi < this.filter_fxns.length; fi++ ) {
-                                // Filter members of each generation
-                                for (var fj=0; fj < CV.allMice.length; fj++) {
-                                    CV.miceGenData[fj].children = this.filter_fxns[fi]( CV.allMice[fj]);
-                                }
-                            }
-
-                            if (this.format_fxns.length == 0) {
-                                return CV.miceGenData;
-                            }
-
-                            // Recursively apply format
-                            return applyFormat( '',CV.miceGenData, 0);
-                        },
-                        // The id parameter needs to correlate with DOM checkbox that uses the 'fmt' function
-                        'add_format': function( id, fmt) {
-                            // Attach the id as an attribute belonging to the fmt function object
-                            fmt.id = id;
-                            this.format_fxns.push( fmt);
-                        },
-                        'remove_format': function( id) {
-                            this.format_fxns = this.format_fxns.filter( function( elem) { return elem.id != id; });
-                        },
-                        'add_filter': function( id, filterfxn) {
-                            // Attach the id as an attribute belonging to the fmt function object
-                            filterfxn.id = id;
-                            this.filter_fxns.push( filterfxn);
-                        },
-                        'remove_filter': function( id) {
-                            this.filter_fxns = this.filter_fxns.filter( function( elem) { return elem.id != id; });
+    // Create an object that stores fxns that need to be applied to the original raw data
+    // to achieve the filtering and grouping specified by user.
+    CV.formattedData = 
+        { // format_fxns are functions that take one parameter - array of raw data objects
+            'filteredHierarchy': mice_data_format( CV.allMice),
+            // format fxns add an additional level of grouping to leaf nodes
+            'format_fxns': [],
+            // filter functions take one parameter - a node to test
+            'filter_fxns': [],
+            // perform the grouping functions and return data in format for circle packing
+            'get_hierarchy': function() {
+                // Recursive helper fxn
+                var that = this;
+                var applyFormat = function( parentName, currLevel, format_index) {
+                    var innerHierarchy = [];
+                    for (var ci=0; ci < currLevel.length; ci++) {
+                        var formattedGroup =
+                            // Ensure the group name is unique for the circles denoting a group, and not
+                            // a node, ie. a female and male group will both have a group representing litter 1
+                            {'name': parentName + currLevel[ci].name,
+                             'colorGroup': typeof currLevel[ci].colorGroup !== 'undefined' ?
+                                currLevel[ci].colorGroup : 'rgba(150,150,150,.9)',
+                             'children': that.format_fxns[format_index]( currLevel[ci].children) };
+                        // A depth first approach in recursion, in which the format_index
+                        // corresponds to depth
+                        if ( (format_index + 1) < that.format_fxns.length) {
+                            // Overwrite children array with additional hierarchy
+                            formattedGroup.children = applyFormat( formattedGroup.name, formattedGroup.children, format_index + 1);
                         }
-    };
+                        else {
+                            // Modify the leaf 'name' with a parent prefix
+                            for( var i=0; i < formattedGroup.children.length; i++) {
+                                formattedGroup.children[i].name = currLevel[ci].name + formattedGroup.children[i].name;
+                            }
+                        }
+                        innerHierarchy.push( formattedGroup);
+                    }
+                    return innerHierarchy;
+                };
 
+                // Recursively apply format
+                return applyFormat( '',this.filteredHierarchy, 0);
+            },
+            // The id parameter needs to correlate with DOM checkbox that uses the 'fmt' function
+            'add_format': function( id, fmt) {
+                // Attach the id as an attribute belonging to the fmt function object
+                fmt.id = id;
+                this.format_fxns.push( fmt);
+            },
+            'remove_format': function( id) {
+                this.format_fxns = this.format_fxns.filter( function( elem) { return elem.id != id; });
+            },
+            'add_filter': function( id, filterFxn) {
+                // Attach the id as an attribute belonging to the fmt function object
+                filterFxn.id = id;
+                this.filter_fxns.push( filterFxn);
+                //this.filteredHierarchy = mice_data_format( CV.allMice);
+                // Apply additional filter
+                // Filters designate what *can* be displayed.
+                // Filter members of each generation
+                for (var g=0; g < this.filteredHierarchy.length; g++) {
+                    this.filteredHierarchy[g].children = this.filteredHierarchy[g].children.filter( filterFxn); 
+                }
+                /*
+                var that = this;
+                for (var g=0; g < this.filteredHierarchy.length; g++) {
+                    //this.filteredHierarchy[g].children = this.filter_fxns[fi]( this.filteredHierarchy[g].children);
+                     this.filteredHierarchy[g].children = this.filteredHierarchy[g].children.filter( function( elem) {
+                        var matchedFilter = false;
+                        for (var fi=0; fi < that.filter_fxns.length; fi++ ) {
+                            matchedFilter = that.filter_fxns[fi]( elem);
+                            if (matchedFilter) {
+                                break;
+                            }
+                        }
+                        return matchedFilter;
+                    });
+                }
+                */
+            },
+            'remove_filter': function( id) {
+                this.filter_fxns = this.filter_fxns.filter( function( elem) { return elem.id != id; });
+                this.filteredHierarchy = mice_data_format( CV.allMice);
+                // Re-Apply remaining filters
+                for (var fi=0; fi < this.filter_fxns.length; fi++ ) {
+                    // Filter members of each generation
+                    for (var g=0; g < this.filteredHierarchy.length; g++) {
+                        this.filteredHierarchy[g].children = this.filteredHierarchy[g].children.filter(this.filter_fxns[fi]); 
+                    }
+                }
+            }
+        };
+
+    CV.active_genotype_filters = [];
+    CV.disabled_genotype_filters = [];
     CV.size_by = function() { return 1;}
 
     CV.width = 950,
     CV.height = 450;
+    CV.infoHeight = 500;
+    CV.infoWidth = 500;
 
     CV.href_individual = function(val) {
         return "http://" + currDomain + "/viz/lineage_view/?mouseId=" + val;
@@ -180,11 +215,10 @@ function initialize( miceData, currDomain) {
 function handle_color() {
     var selected = this.value;
     if (selected == "genotype") {
-        // Show the gene radio button selectors
-        d3.select("#geneSelector").style("display","inline")
+    // For unchecking a checkbox, the selections will not include this element
+        //update_color( assign_genotype_color.curry( selections));
     }
     else if (selected == "gender") {
-        d3.select("#geneSelector").style("display","none");
         update_color( assign_gender_color);
     }
 }
@@ -244,25 +278,16 @@ function assign_genotype_color( selections, d) {
 
 // Callback when gene radio button is clicked
 function handle_gene() {
-    var selections = {};
     var that = this; // 'that' is used for closure
     // The 'this' context here is for element clicked.
-    // Make sure the value for the gene is the newly selected checkbox
-    if (this.checked == true) {
-        selections[this.name] = this.value;
-    }
-    // Create a dictionary of genes with selected values
+    // Uncheck a previous gene value
     d3.selectAll("#geneSelector input").each( function() {
-        // Uncheck a previous gene value
         if (this.checked == true) {
             if ( (this.name == that.name) && (this.value != that.value) ) {
                 this.checked = false;
             }
-            else selections[this.name] = this.value;
         }
-    })
-    // For unchecking a checkbox, the selections will not include this element
-    update_color( assign_genotype_color.curry( selections));
+    });
 }
 
 // Callback when user clicks on checkbox to group by gender
@@ -309,23 +334,27 @@ function handle_group_gene() {
 
 // Callback when gender filter is clicked
 function handle_filter_gender() {
-    var that = this; // 'that' is used for closure
-    // The 'this' context here is for element clicked.
-    // Remove any previous filter for gender because user is either changing filter value,
-    // or unchecking a filter.
+    // Remove any previous filter for gender because user is changing filter value
     CV.formattedData.remove_filter( "filterGender");
-    if (this.checked == true) {
+    if ( (this.checked == true) && (this.value != 'All') ) {
         CV.formattedData.add_filter( "filterGender", perform_filter.curry(this.name, this.value) );
     }
-
+    // The 'this' context here is for element clicked.
+    /* Following old code for checkbox instead of radio buttons
+    var that = this; // 'that' is used to reference outer scope within closure
     d3.selectAll("#genderFilter input").each( function() {
-        // Uncheck a previous value
         if (this.checked == true) {
+            // Uncheck a previous value
             if ( (this.name == that.name) && (this.value != that.value) ) {
                 this.checked = false;
+                this.disabled = false;
+            }
+            else { // Disallow unchecking
+                this.disabled = true;
             }
         }
     });
+    */
     
     // Re-draw
     CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
@@ -335,10 +364,183 @@ function handle_filter_gender() {
     draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
+function handle_add_geno_filter() {
+    // Show the gene radio button selectors
+    d3.selectAll(".genotypeDesc").style("display","inline")
+}
+
+// Function to compare user selected genotype filter with data.
+// Parameter "selections" is an object with a field for each specified gene in filter.
+function check_genotype( node, selections) {
+    // Try to eliminate by looking for mismatch with selection values since all or no match
+    if (node.gene1 in selections) {
+        if (node.genotype1 != selections[node.gene1]) {
+            return false;
+        }
+    }
+    if (node.gene2 in selections) {
+        if (node.genotype2 != selections[node.gene2]) {
+            return false;
+        }
+    }
+    if (node.gene3 in selections) {
+        if (node.genotype3 != selections[node.gene3]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Called when user presses "Done" button for creating genotype filter
+function handle_done_geno_filter() {
+    d3.selectAll(".genotypeDesc").style("display","none");
+    // Create a dictionary of genes with selected values
+    var selections = {};
+    d3.selectAll("#geneSelector input").each( function() {
+        if (this.checked == true) {
+            selections[this.name] = this.value;
+        }
+    })
+    // Create unique name for filter so it can later
+    // be referenced for removal.
+    var doneSelection = "";
+    for (var prop in selections) {
+        if (selections.hasOwnProperty(prop)) {
+            doneSelection = doneSelection + prop + " " + selections[prop] + " ";
+        }
+    }
+    // Create new filter entry in the menu
+    var doneSel = d3.select("#userFilters").append("tr");
+    doneSel.append("td").append("input")
+        .attr("type","checkbox")
+        .attr("name", doneSelection)
+        .classed("userAddedFilter",true)
+        .property("checked","true")
+        .on("click", handle_user_filter);
+    doneSel.append("td")
+        .text(doneSelection);
+    d3.select("#allGeno")
+        .attr("disabled",null)
+        .property("checked",false);
+    // Run filter
+    // Given an object with a field for each filter name selected and 
+    // set to corresponding value ie. LEF1 = +/+
+    // The raw data being compared with has format where fields
+    // exist such as gene1, gene2 ... with values such as LEF1 ...
+    // and also fields for genotype1, genotype2 ... with values such as +/-
+    add_genotype_filter( doneSelection, check_grp.curry(selections));
+    CV.formattedData.remove_filter( "genotypeFilter");
+    CV.formattedData.add_filter( "genotypeFilter", perform_filter_set );
+
+    // Re-draw
+    CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+    update_view( CV.nodeLayout);
+    //update_color();
+    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    draw_arrows( CV.svg, lines, AR.line_generator);
+}
+
+function handle_all_geno_filter() {
+    // Disable ability to uncheck 'All'. Need to select a different value
+    this.disabled = true;
+    d3.selectAll(".userAddedFilter")
+        .property("checked",false); 
+}
+
+function handle_user_filter() {
+    // When filter is checked, the 'All' option should be enabled.
+    // Note: this is not for handling event when filter is created
+    // and automatically checked. It is for when user unchecks
+    // then re-checks a filter.
+    if (this.checked == true) {
+        d3.select("#allGeno")
+            .attr("disabled",null)
+            .property("checked",false);
+        restore_genotype_filter( this.name);
+        CV.formattedData.remove_filter( "genotypeFilter");
+        CV.formattedData.add_filter( "genotypeFilter", perform_filter_set );
+    }
+    else {
+        remove_genotype_filter( this.name);
+        // When filter is unchecked, and no other filters are checked
+        // then the 'All' option should be auto checked.
+        CV.formattedData.remove_filter( "genotypeFilter");
+        if (CV.active_genotype_filters.length == 0) {
+            d3.select("#allGeno")
+                .attr("disabled", true)
+                .property("checked", true);
+        }
+        else {
+            CV.formattedData.add_filter( "genotypeFilter", perform_filter_set );
+        }
+    } 
+    // Re-draw
+    CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+    update_view( CV.nodeLayout);
+    //update_color();
+    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    draw_arrows( CV.svg, lines, AR.line_generator);
+}
+
+function handle_hover_info( thisNode) {
+    var xpos = 20;
+    var ypos = 30;
+    if ( typeof CV.infoText == 'undefined') {
+        d3.select("#mouseInfoDiv svg")
+            .append("rect")
+            .attr("height", CV.infoHeight - 20)
+            .attr("width", CV.infoWidth - 20)
+            .attr("x", xpos)
+            .attr("y", ypos)
+            .attr("rx", 20)
+            .attr("ry", 20)
+            .style("fill","rgba(250,241,133,0.3");
+        CV.infoText = d3.select("#mouseInfoDiv svg")
+            .append("text")
+            .attr("x", xpos)
+            .attr("y", ypos);
+    }
+    //Update details shown
+    ypos += 30;
+    CV.infoText.text("Details of mouse " + thisNode.datum().mouseId);
+    CV.infoText.append("tspan").text( "Generation: " + thisNode.datum().generation)
+            .attr("x", xpos).attr("y", ypos);
+    ypos += 20;
+    CV.infoText.append("tspan").text( "Father ID: " + thisNode.datum().fatherId)
+            .attr("x", xpos).attr("y", ypos);
+    ypos += 20;
+    CV.infoText.append("tspan").text( "Mother ID: " + thisNode.datum().motherId)
+            .attr("x", xpos).attr("y", ypos);
+    //second column
+    ypos = 60;
+    xpos += 180;
+    CV.infoText.append("tspan").text( "Gender: " + thisNode.datum().gender)
+            .attr("x", xpos).attr("y", ypos);
+    ypos += 20;
+    CV.infoText.append("tspan").text( "Genotype: " )
+            .attr("x", xpos).attr("y", ypos);
+    xpos += 20;
+    ypos += 20;
+    CV.infoText.append("tspan").text( thisNode.datum().gene1 + " : " + thisNode.datum().genotype1)
+            .attr("x", xpos).attr("y", ypos);
+    ypos += 20;
+    CV.infoText.append("tspan").text( thisNode.datum().gene2 + " : " + thisNode.datum().genotype2)
+            .attr("x", xpos).attr("y", ypos);
+    ypos += 20;
+    CV.infoText.append("tspan").text( thisNode.datum().gene3 + " : " + thisNode.datum().genotype3)
+            .attr("x", xpos).attr("y", ypos);
+}
+
+
 function create_initial_view( initNodes) {
     CV.svg = d3.select("#graph").append("svg")
             .attr("width", CV.width)
             .attr("height", CV.height);
+
+    // Mouse info is left blank until hover event occurs
+    d3.select("#mouseInfoDiv").append("svg")
+            .attr("width", CV.infoWidth)
+            .attr("height", CV.infoHeight);
 
     // Add event handlers to various view options
     d3.select("#selectColorGroup").on("change", handle_color);
@@ -346,6 +548,9 @@ function create_initial_view( initNodes) {
     d3.select("#genderCheck").on("click", handle_group_gender);
     d3.select("#litterCheck").on("click", handle_group_litter);
     d3.select("#geneCheck").on("click", handle_group_gene);
+    d3.select("#addGenotypeFilter").on("click", handle_add_geno_filter);
+    d3.select("#doneGenotypeFilter").on("click", handle_done_geno_filter);
+    d3.select("#allGeno").on("click", handle_all_geno_filter);
     d3.selectAll("#geneSelector input").on("click", handle_gene);
     d3.selectAll("#genderFilter input").on("click", handle_filter_gender);
 
@@ -405,6 +610,8 @@ function create_initial_view( initNodes) {
                         CV.pathsDisplayed
                                 .classed("pathHovered", true)
                                 .style("stroke", "rgba(130,230,190,0.5");
+                        //show info on selected node
+                        handle_hover_info( thisNode);
                     }
                 })
                 .on("dblclick", function() {
@@ -472,6 +679,26 @@ function create_litter_format( rawNodes) {
     return litterGroup;
 }
 
+function check_grp( selections, node) {
+    // Try to eliminate by looking for mismatch with selection values since all or no match
+    if (node.gene1 in selections) {
+        if (node.genotype1 != selections[node.gene1]) {
+            return false;
+        }
+    }
+    if (node.gene2 in selections) {
+        if (node.genotype2 != selections[node.gene2]) {
+            return false;
+        }
+    }
+    if (node.gene3 in selections) {
+        if (node.genotype3 != selections[node.gene3]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 function create_gene_format( rawNodes) {
     var selections = {};
     // Create a dictionary of genes with selected values
@@ -485,27 +712,8 @@ function create_gene_format( rawNodes) {
     }
     var inGrp = [];
     var outGrp = [];
-    function check_grp( node, selections) {
-        // Try to eliminate by looking for mismatch with selection values since all or no match
-        if (node.gene1 in selections) {
-            if (node.genotype1 != selections[node.gene1]) {
-                return false;
-            }
-        }
-        if (node.gene2 in selections) {
-            if (node.genotype2 != selections[node.gene2]) {
-                return false;
-            }
-        }
-        if (node.gene3 in selections) {
-            if (node.genotype3 != selections[node.gene3]) {
-                return false;
-            }
-        }
-        return true;
-    }
     for (var i=0; i < rawNodes.length; i++) {
-        if ( check_grp(rawNodes[i], selections) ) {
+        if ( check_grp( selections, rawNodes[i]) ) {
             inGrp.push(rawNodes[i]);
         }
         else {
@@ -518,11 +726,73 @@ function create_gene_format( rawNodes) {
     return geneGrp;
 }
 
-function perform_filter( attrName, attrVal, rawNodes) {
-    return rawNodes.filter( function( elem) { return elem[attrName] != attrVal; });
+function add_genotype_filter( id, add_fxn) {
+
+    add_fxn.id = id;
+    CV.active_genotype_filters.push(add_fxn );
 }
 
-// Take an array of objects, with each object representing a generation, and having a children field.
+function restore_genotype_filter( id) {
+    var add_fxn;
+    for( var ff=0; ff < CV.disabled_filter_fxns.length; ff++) {
+        if (CV.disabled_filter_fxns[ff].id == id) {
+            add_fxn = CV.disabled_filter_fxns[ff];
+            CV.disabled_filter_fxns = CV.disabled_filter_fxns.filter( function( elem) { return elem.id != id; });
+            CV.active_genotype_filters.push(add_fxn );
+            break;
+        }
+    }
+}
+
+function remove_genotype_filter( id) {
+    // move filter fxn to disabled list
+    for (var fi=0; fi < CV.active_genotype_filters.length; fi++) {
+        if (CV.active_genotype_filters[fi].id == id) {
+            CV.disabled_genotype_filters.push( CV.active_genotype_filters[fi]);
+            CV.active_genotype_filters = CV.active_genotype_filters.filter( function(elem) { return elem.id != id; });
+            break;
+        }
+    }
+}
+
+function perform_filter( attrName, attrVal, rawNode) {
+    //return rawNodes.filter( function( elem) { return elem[attrName] == attrVal; });
+    return rawNode[attrName] == attrVal;
+}
+
+function perform_filter_set( rawNode) {
+    // If no selections supplied, look for id in disabled_filter_fxns
+    /*
+    if ( typeof selections == 'undefined') {
+        for( var ff=0; ff < CV.disabled_filter_fxns.length; ff++) {
+            if (CV.disabled_filter_fxns[ff].id == id) {
+                add_fxn = CV.disabled_filter_fxns[ff];
+                CV.disabled_filter_fxns = CV.disabled_filter_fxns.filter( function( elem) { return elem.id != id; });
+                break;
+            }
+        }
+        if ( typeof add_fxn == 'undefined') {
+            return;
+        }
+    }
+    else {
+        // Save genotype filter set member. 
+        // The check of all genotype filters is combined here for use by CV.formattedData.add_filter
+        add_fxn = check_grp.curry(selections);
+        add_fxn.id = id;
+    }
+    */
+    var matchedFilter = false;
+    for (var fi=0; fi < CV.active_genotype_filters.length; fi++ ) {
+        matchedFilter = CV.active_genotype_filters[fi]( rawNode);
+        if (matchedFilter) {
+            break;
+        }
+    }
+    return matchedFilter;
+}
+
+// T of objects, with each object representing a generation, and having a children field.
 // Return an array of an array of objects that have data for position and size.
 function layout_generations( genArray) {
     // Use the circle packing layout to calculate node positions for each generation.
