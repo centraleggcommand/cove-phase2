@@ -148,22 +148,6 @@ function initialize( miceData, currDomain) {
                 for (var g=0; g < this.filteredHierarchy.length; g++) {
                     this.filteredHierarchy[g].children = this.filteredHierarchy[g].children.filter( filterFxn); 
                 }
-                /*
-                var that = this;
-                for (var g=0; g < this.filteredHierarchy.length; g++) {
-                    //this.filteredHierarchy[g].children = this.filter_fxns[fi]( this.filteredHierarchy[g].children);
-                     this.filteredHierarchy[g].children = this.filteredHierarchy[g].children.filter( function( elem) {
-                        var matchedFilter = false;
-                        for (var fi=0; fi < that.filter_fxns.length; fi++ ) {
-                            matchedFilter = that.filter_fxns[fi]( elem);
-                            if (matchedFilter) {
-                                break;
-                            }
-                        }
-                        return matchedFilter;
-                    });
-                }
-                */
             },
             'remove_filter': function( id) {
                 this.filter_fxns = this.filter_fxns.filter( function( elem) { return elem.id != id; });
@@ -437,7 +421,8 @@ function handle_done_geno_filter() {
     update_view( CV.nodeLayout);
     //update_color();
     var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
-    draw_arrows( CV.svg, lines, AR.line_generator);
+    //draw_arrows( CV.svg, lines, AR.line_generator);
+    setTimeout( function() { draw_arrows( CV.svg, lines, AR.line_generator);}, 5000);
 }
 
 function handle_all_geno_filter() {
@@ -542,6 +527,38 @@ function handle_hover_info( thisNode) {
             .attr("x", xpos).attr("y", ypos);
 }
 
+function handle_mouseover( thisNode) {
+    if (thisNode.datum().mouseId) { //only highlight nodes, not hierarchy circles
+        //undo any previous selection
+        if (CV.nodeHovered) {
+            CV.nodeHovered
+                    .classed("hovered", false)
+                    .style("stroke", "rgb(150, 150, 150)")
+                    .style("stroke-width", "1.0px");
+        }
+        if (CV.pathsDisplayed) {
+            CV.pathsDisplayed
+                    .classed("pathHovered", false)
+                    .style("stroke", "rgba(255,255,255,0");
+        }
+        thisNode
+                .classed("hovered", true)
+                .style( "stroke", "rgb(250,250,0)")
+                .style("stroke-width", "3px");
+        CV.nodeHovered = thisNode;
+        CV.pathsDisplayed = CV.svg.selectAll("path").filter( function(d) {
+            if ((d[0].id == thisNode.datum().mouseId) || (d[2].id == thisNode.datum().mouseId) ) {
+                return true;
+            }
+            else return false;
+        });
+        CV.pathsDisplayed
+                .classed("pathHovered", true)
+                .style("stroke", "rgba(130,230,190,0.5");
+        //show info on selected node
+        handle_hover_info( thisNode);
+    }
+}
 
 function create_initial_view( initNodes) {
     CV.svg = d3.select("#graph").append("svg")
@@ -743,12 +760,10 @@ function add_genotype_filter( id, add_fxn) {
 }
 
 function restore_genotype_filter( id) {
-    var add_fxn;
-    for( var ff=0; ff < CV.disabled_filter_fxns.length; ff++) {
-        if (CV.disabled_filter_fxns[ff].id == id) {
-            add_fxn = CV.disabled_filter_fxns[ff];
-            CV.disabled_filter_fxns = CV.disabled_filter_fxns.filter( function( elem) { return elem.id != id; });
-            CV.active_genotype_filters.push(add_fxn );
+    for( var ff=0; ff < CV.disabled_genotype_filters.length; ff++) {
+        if (CV.disabled_genotype_filters[ff].id == id) {
+            CV.active_genotype_filters.push(CV.disabled_genotype_filters[ff]);
+            CV.disabled_genotype_filters = CV.disabled_genotype_filters.filter( function( elem) { return elem.id != id; });
             break;
         }
     }
@@ -849,6 +864,7 @@ function update_view( nodeLayouts) {
                 .attr("cy", function(d) { return d.y; })
                 .attr("r", function(d) { return CV.fit_scale(d.r); });
     }
+    d3.selectAll(".node").on("mouseover", function() {handle_mouseover( d3.select(this)); });
 }
 
 // The parameter color_fxn is a function with one parameter - the node data
