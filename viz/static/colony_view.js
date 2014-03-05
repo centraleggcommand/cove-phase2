@@ -201,6 +201,7 @@ function handle_color() {
     if (selected == "genotype") {
     // For unchecking a checkbox, the selections will not include this element
         //update_color( assign_genotype_color.curry( selections));
+        update_color( assign_genotype_color);
     }
     else if (selected == "gender") {
         update_color( assign_gender_color);
@@ -236,28 +237,14 @@ function assign_gender_color( d) {
     else return "#C0C0C0";
 }
 
+CV.genotype_color_scale = d3.scale.category20();
+
 // This function is meant to be curried, since the selections should not have to be looked up
 // for every node that this function is called for.
-function assign_genotype_color( selections, d) {
-    var unmatched = "#FFFFFF";
-    var match = "#00AA00";
-    // Try to eliminate by looking for mismatch with selection values since all or no match
-    if (d.gene1 in selections) {
-        if (d.genotype1 != selections[d.gene1]) {
-            return unmatched;
-        }
-    }
-    if (d.gene2 in selections) {
-        if (d.genotype2 != selections[d.gene2]) {
-            return unmatched;
-        }
-    }
-    if (d.gene3 in selections) {
-        if (d.genotype3 != selections[d.gene3]) {
-            return unmatched;
-        }
-    }
-    return match;
+function assign_genotype_color( d) {
+    // Each genotype is assigned a mapping to a color
+    var gId = d.genotype1 + d.genotype2 + d.genotype3;
+    return CV.genotype_color_scale(gId);
 }
 
 // Callback when gene radio button is clicked
@@ -351,28 +338,6 @@ function handle_filter_gender() {
 function handle_add_geno_filter() {
     // Show the gene radio button selectors
     d3.selectAll(".genotypeDesc").style("display","inline")
-}
-
-// Function to compare user selected genotype filter with data.
-// Parameter "selections" is an object with a field for each specified gene in filter.
-function check_genotype( node, selections) {
-    // Try to eliminate by looking for mismatch with selection values since all or no match
-    if (node.gene1 in selections) {
-        if (node.genotype1 != selections[node.gene1]) {
-            return false;
-        }
-    }
-    if (node.gene2 in selections) {
-        if (node.genotype2 != selections[node.gene2]) {
-            return false;
-        }
-    }
-    if (node.gene3 in selections) {
-        if (node.genotype3 != selections[node.gene3]) {
-            return false;
-        }
-    }
-    return true;
 }
 
 // Called when user presses "Done" button for creating genotype filter
@@ -586,7 +551,7 @@ function create_initial_view( initNodes) {
     var colorOption = d3.select("#selectColorGroup").node();
     var colorBy = colorOption.options[colorOption.selectedIndex].value;
     if (colorBy == "gender") { CV.color_fxn = assign_gender_color; }
-    else if (colorBy == "genotype") { CV.color_fxn = assign_genotype_color.curry( {});}
+    else if (colorBy == "genotype") { CV.color_fxn = assign_genotype_color;}
 
     for (var i=0; i < initNodes.length; i++) {
         var genGrp = CV.svg.append("g").datum(i)
@@ -728,6 +693,8 @@ function check_grp( selections, node) {
 }
 
 function create_gene_format( rawNodes) {
+    return rawNodes;
+    /*
     var selections = {};
     // Create a dictionary of genes with selected values
     d3.selectAll("#geneSelector input").each( function() {
@@ -752,6 +719,7 @@ function create_gene_format( rawNodes) {
     if (inGrp.length > 0) { geneGrp.push( {'name': 'genotypeMatch', 'children': inGrp}); }
     if (outGrp.length > 0) { geneGrp.push( {'name': 'genotypeNoMatch', 'children': outGrp}); }
     return geneGrp;
+    */
 }
 
 function add_genotype_filter( id, add_fxn) {
