@@ -102,10 +102,11 @@ function draw_arrows( svg, lines, line_fxn) {
         .append("path")
         .attr("d", function(d) { return line_fxn(d); })
         .attr("fill", "none")
+        .classed("arrow",true)
         .style("stroke", "rgba(255,255,255,0)")
         .style("stroke-width", 1)
         .style("pointer-events", "none");
-    var removed = pathSel.exit().remove();
+    pathSel.exit().remove();
     pathSel
         .attr("d", function(d) { return line_fxn(d); })
         .style("stroke", "rgba(255,255,255,0)");

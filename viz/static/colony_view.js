@@ -198,6 +198,7 @@ function initialize( miceData, currDomain) {
 
 function handle_color() {
     var selected = this.value;
+    d3.selectAll(".genotypeColor").style("display","none");
     if (selected == "genotype") {
     // For unchecking a checkbox, the selections will not include this element
         //update_color( assign_genotype_color.curry( selections));
@@ -205,6 +206,10 @@ function handle_color() {
     }
     else if (selected == "gender") {
         update_color( assign_gender_color);
+    }
+    else if (selected == "customGenotype") {
+        // show any existing color groups and add button
+        d3.selectAll(".genotypeColor").style("display","inline");
     }
 }
 
@@ -245,6 +250,91 @@ function assign_genotype_color( d) {
     // Each genotype is assigned a mapping to a color
     var gId = d.genotype1 + d.genotype2 + d.genotype3;
     return CV.genotype_color_scale(gId);
+}
+
+CV.custom_color_scale = d3.scale.category20b();
+
+CV.arc = d3.svg.arc()
+        .innerRadius(0);
+
+CV.pie = d3.layout.pie()
+        .value(function(d) { return 1; });
+
+// Draw a pie chart representing the different color groups a node is a part of
+function create_pie_node( thisNode) { 
+
+    // Make the size of the pie the same as node it is replacing
+    var radius = thisNode.attr("r");
+    CV.arc = CV.arc.outerRadius( radius);
+    // Get position to translate pie
+    var xpos = thisNode.attr("cx");
+    var ypos = thisNode.attr("cy");
+    // Get list of color groups assoc with node
+    var nodeData = thisNode.datum();
+
+    var g = CV.svg.selectAll(".pie-arc")
+        .data( CV.pie( nodeData.colorGrp))
+        .enter().append("g")
+        .attr("class", "pie-arc")
+        .attr("transform", "translate(" + xpos + "," + ypos + ")");
+    g.append("path")
+        .attr("d", CV.arc)
+        .style("fill", function(d,i) { 
+            var hey = CV.custom_color_scale( nodeData.colorGrp[i]);
+            return; });
+    thisNode.style("fill", "rgba(255,255,255,0)");
+}
+
+
+// Callback when a new custom color is added
+function handle_done_geno_color() {
+    d3.selectAll(".genotypeColorSelect").style("display","none");
+    // Collect user selections of checkboxes
+    var selections = {};
+    d3.selectAll("#colorGeneSelector input").each( function() {
+        if (this.checked == true) {
+            selections[this.name] = this.value;
+        }
+    })
+    // Create unique name for color group
+    var doneSelection = "";
+    for (var prop in selections) {
+        if (selections.hasOwnProperty(prop)) {
+            doneSelection = doneSelection + prop + " " + selections[prop] + " ";
+        }
+    }
+    // Create new filter entry in the menu
+    var doneSel = d3.select("#userColors").append("tr");
+    doneSel.append("td").append("input")
+        .attr("type","checkbox")
+        .attr("name", doneSelection)
+        .classed("userAddedColor",true)
+        .property("checked","true");
+    doneSel.append("td")
+        .text(doneSelection);
+    // Perform coloring
+    var colorAssigned = CV.custom_color_scale( doneSelection);
+    d3.selectAll(".node").each( function(d) {
+        if (check_grp( selections, d) ) {
+            // Add pie chart color
+            var thisNode = d3.select(this);
+            if ( thisNode.classed("custom-colored") ) {
+                // Change value of datum
+                thisNode.datum( function(d) { 
+                    d.colorGrp.push( doneSelection);
+                    return d; });
+                create_pie_node( thisNode);
+            }
+            // Change color if not already colored
+            else {
+                thisNode.style("fill", colorAssigned);
+                thisNode.classed("custom-colored",true);
+                thisNode.datum( function(d) { 
+                    d.colorGrp = [doneSelection];
+                    return d; } );
+            }
+        }
+    });
 }
 
 // Callback when gene radio button is clicked
@@ -338,6 +428,11 @@ function handle_filter_gender() {
 function handle_add_geno_filter() {
     // Show the gene radio button selectors
     d3.selectAll(".genotypeDesc").style("display","inline")
+}
+
+function handle_add_geno_color() {
+    // Show the gene radio button selectors
+    d3.selectAll(".genotypeColorSelect").style("display","inline")
 }
 
 // Called when user presses "Done" button for creating genotype filter
@@ -504,14 +599,14 @@ function handle_mouseover( thisNode) {
         if (CV.pathsDisplayed) {
             CV.pathsDisplayed
                     .classed("pathHovered", false)
-                    .style("stroke", "rgba(255,255,255,0");
+                    .style("stroke", "rgba(255,255,255,0)");
         }
         thisNode
                 .classed("hovered", true)
                 .style( "stroke", "rgb(250,250,0)")
                 .style("stroke-width", "3px");
         CV.nodeHovered = thisNode;
-        CV.pathsDisplayed = CV.svg.selectAll("path").filter( function(d) {
+        CV.pathsDisplayed = CV.svg.selectAll("path.arrow").filter( function(d) {
             if ((d[0].id == thisNode.datum().mouseId) || (d[2].id == thisNode.datum().mouseId) ) {
                 return true;
             }
@@ -519,7 +614,7 @@ function handle_mouseover( thisNode) {
         });
         CV.pathsDisplayed
                 .classed("pathHovered", true)
-                .style("stroke", "rgba(130,230,190,0.5");
+                .style("stroke", "rgba(130,230,190,0.5)");
         //show info on selected node
         handle_hover_info( thisNode);
     }
@@ -540,12 +635,14 @@ function create_initial_view( initNodes) {
     d3.select("#selectSizeBy").on("change", handle_size);
     d3.select("#genderCheck").on("click", handle_group_gender);
     d3.select("#litterCheck").on("click", handle_group_litter);
-    d3.select("#geneCheck").on("click", handle_group_gene);
+    //d3.select("#geneCheck").on("click", handle_group_gene);
     d3.select("#addGenotypeFilter").on("click", handle_add_geno_filter);
     d3.select("#doneGenotypeFilter").on("click", handle_done_geno_filter);
     d3.select("#allGeno").on("click", handle_all_geno_filter);
     d3.selectAll("#geneSelector input").on("click", handle_gene);
     d3.selectAll("#genderFilter input").on("click", handle_filter_gender);
+    d3.select("#addGenotypeColor").on("click", handle_add_geno_color);
+    d3.select("#doneGenotypeColor").on("click", handle_done_geno_color);
 
     // Use default color selection indicated by DOM dropdown element
     var colorOption = d3.select("#selectColorGroup").node();
@@ -576,6 +673,8 @@ function create_initial_view( initNodes) {
         genGrp.selectAll(".node")
                 .on("mouseover", function() {
                     var thisNode = d3.select(this);
+                    handle_mouseover( thisNode);
+                    /*
                     if (thisNode.datum().mouseId) { //only highlight nodes, not hierarchy circles
                         //undo any previous selection
                         if (CV.nodeHovered) {
@@ -602,10 +701,11 @@ function create_initial_view( initNodes) {
                         });
                         CV.pathsDisplayed
                                 .classed("pathHovered", true)
-                                .style("stroke", "rgba(130,230,190,0.5");
+                                .style("stroke", "rgba(130,230,190,0.5"));
                         //show info on selected node
                         handle_hover_info( thisNode);
                     }
+                    */
                 })
                 .on("dblclick", function() {
                     var thisNode = d3.select(this);

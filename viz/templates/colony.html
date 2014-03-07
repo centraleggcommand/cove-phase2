@@ -138,7 +138,35 @@ $(document).ready( function() {
                 <select id="selectColorGroup">
                     <option value="gender" selected="true">Gender</option>
                     <option value="genotype">Genotype</option>
+                    <option value="customGenotype">Custom Genotype</option>
                 </select>
+            </td></tr>
+            <tr><td>
+                <table id="userColors" class="genotypeColor" style="display:none">
+                </table>
+            </td></tr>
+            <tr id="colorGeneSelector" class="genotypeColorSelect" style="display:none"><td>
+                <label>LEF1</label><br>
+                <input type="checkbox" name="LEF1" value="+/-">+/-<br>
+                <input type="checkbox" name="LEF1" value="-/-">-/-<br>
+                <input type="checkbox" name="LEF1" value="WT">WT<br>
+            </td><td>
+                <label>RANKL</label><br>
+                <input type="checkbox" name="RANKL" value="+/-">+/-<br>
+                <input type="checkbox" name="RANKL" value="-/-">-/-<br>
+                <input type="checkbox" name="RANKL" value="WT">WT<br>
+            </td><td>
+                <label>PTHrP</label><br>
+                <input type="checkbox" name="PTHrP" value="+/-">+/-<br>
+                <input type="checkbox" name="PTHrP" value="-/-">-/-<br>
+                <input type="checkbox" name="PTHrP" value="WT">WT<br>
+            </td></tr>
+            <tr id="doneColorRow" class="genotypeColorSelect" style="display:none"><td>
+                <input id="doneGenotypeColor" type="button" value="Done">
+            </td></tr>
+            <tr class="genotypeColor" style="display:none"><td>
+                <input id="addGenotypeColor" type="image" src="/static/img/plus.png" alt="Add" width="24" height="24">
+                Add genotype color
             </td></tr>
         </table>
     </div>
