@@ -202,16 +202,26 @@ function handle_color() {
     if (selected == "genotype") {
     // For unchecking a checkbox, the selections will not include this element
         //update_color( assign_genotype_color.curry( selections));
+        d3.selectAll(".genotypeColor").style("display","none");
+        d3.selectAll(".pie-arc").style("opacity","0");
         update_color( assign_genotype_color);
     }
     else if (selected == "gender") {
+        d3.selectAll(".genotypeColor").style("display","none");
+        d3.selectAll(".pie-arc").style("opacity","0");
         update_color( assign_gender_color);
     }
     else if (selected == "customGenotype") {
         // show any existing color groups and add button
         d3.selectAll(".genotypeColor").style("display","inline");
-        // default make all nodes white
-        d3.selectAll(".node").style("fill", "rgba(255,255,255,0)");
+        var oldArcs = d3.selectAll(".pie-arc");
+        if (!oldArcs.empty()) {
+            oldArcs.style("opacity","1");
+        }
+        // Apply saved color or default make all nodes white.
+        // Multi color nodes should be overlaid with pie charts, so color doesn't matter.
+        d3.selectAll(".node").style("fill", function(d) {
+            return typeof d.colorGrp == "undefined" ? "rgba(255,255,255,0)" : CV.custom_color_scale(d.colorGrp[0]);} );
     }
 }
 
