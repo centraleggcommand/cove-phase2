@@ -61,9 +61,9 @@ $(document).ready( function() {
         <li> <a href="#filter-tab-panel">Filter</a></li>
         <li> <a href="#group-tab-panel">Group</a></li>
         <li> <a href="#image-tab-panel">Image</a></li>
+        <li> <a href="#search-tab-panel">Search</a></li>
     </ul>
     <div id="filter-tab-panel" >
-    	<h3>My Filter Panel</h3>
         <table>
         <tr><td><label><b>Gender</b></label></td></tr>
         <tr id="genderFilter"> <td>
@@ -110,7 +110,6 @@ $(document).ready( function() {
         </table>
     </div>
     <div id="group-tab-panel" >
-    	<h3>My Group Panel</h3>
         <table>
         <tr> <td>
             <input type="checkbox" id="genderCheck" value="gender" checked="true">Gender
@@ -124,7 +123,6 @@ $(document).ready( function() {
         </table>
     </div>
     <div id="image-tab-panel" >
-    	<h3>My Image Panel</h3>
         <table cellspacing="10">
             <tr><td>
                 <label><b>Circle Size By: </b></label>
@@ -167,6 +165,18 @@ $(document).ready( function() {
             <tr class="genotypeColor" style="display:none"><td>
                 <input id="addGenotypeColor" type="image" src="/static/img/plus.png" alt="Add" width="24" height="24">
                 Add genotype color
+            </td></tr>
+        </table>
+    </div>
+    <div id="search-tab-panel" >
+        <table cellspacing="10">
+            <tr><td>
+            <label><b>Search by MouseId: </b></label>
+            <input id="searchMouse" type="text" name="searchbox">
+            <input id="submitSearch" type="button" value="Find">
+            </td></tr>
+            <tr><td>
+            <p id="searchError" style="color:red; display:none;">MouseId not found in the display</p>
             </td></tr>
         </table>
     </div>

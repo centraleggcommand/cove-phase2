@@ -210,6 +210,8 @@ function handle_color() {
     else if (selected == "customGenotype") {
         // show any existing color groups and add button
         d3.selectAll(".genotypeColor").style("display","inline");
+        // default make all nodes white
+        d3.selectAll(".node").style("fill", "rgba(255,255,255,0)");
     }
 }
 
@@ -252,7 +254,7 @@ function assign_genotype_color( d) {
     return CV.genotype_color_scale(gId);
 }
 
-CV.custom_color_scale = d3.scale.category20b();
+CV.custom_color_scale = d3.scale.category20();
 
 CV.arc = d3.svg.arc()
         .innerRadius(0);
@@ -263,28 +265,42 @@ CV.pie = d3.layout.pie()
 // Draw a pie chart representing the different color groups a node is a part of
 function create_pie_node( thisNode) { 
 
+    var nodeData = thisNode.datum();
     // Make the size of the pie the same as node it is replacing
     var radius = thisNode.attr("r");
-    CV.arc = CV.arc.outerRadius( radius);
+    CV.arc.outerRadius( radius);
     // Get position to translate pie
     var xpos = thisNode.attr("cx");
     var ypos = thisNode.attr("cy");
-    // Get list of color groups assoc with node
-    var nodeData = thisNode.datum();
 
-    var g = CV.svg.selectAll(".pie-arc")
-        .data( CV.pie( nodeData.colorGrp))
-        .enter().append("g")
-        .attr("class", "pie-arc")
-        .attr("transform", "translate(" + xpos + "," + ypos + ")");
-    g.append("path")
+    // create new pie based on mouseId; separate g for each segment of pie
+    var pieSel = CV.svg.select("#g" +nodeData.generation).selectAll(".pie-" + nodeData.mouseId);
+    if ( !pieSel.empty()) {
+        pieSel.attr("transform", "translate(" + xpos + "," + ypos + ")");
+        pieSel.selectAll("path").remove();
+    }
+    // add new pie segments
+    pieSel.data( CV.pie( nodeData.colorGrp)).enter()
+        .append("g")
+            .attr("class", "pie-" + nodeData.mouseId)
+            // class to make invisible when user coloring option changes
+            .classed("pie-arc", true)
+            .attr("transform", "translate(" + xpos + "," + ypos + ")")
+            .append("path")
+                .attr("d", CV.arc)
+                .style("fill", function(d,i) { 
+                    return CV.custom_color_scale( d.data); });
+    // change existing pie segments
+    pieSel.append("path")
         .attr("d", CV.arc)
-        .style("fill", function(d,i) { 
-            var hey = CV.custom_color_scale( nodeData.colorGrp[i]);
-            return; });
-    thisNode.style("fill", "rgba(255,255,255,0)");
+        .style("fill", function(d) { 
+            return CV.custom_color_scale( d.data); });
+
 }
 
+
+CV.colorLegendWidth = 20;
+CV.colorLegendHeight = 20;
 
 // Callback when a new custom color is added
 function handle_done_geno_color() {
@@ -303,17 +319,32 @@ function handle_done_geno_color() {
             doneSelection = doneSelection + prop + " " + selections[prop] + " ";
         }
     }
+    // A selection string is mapped to a color randomly
+    var colorAssigned = CV.custom_color_scale( doneSelection);
     // Create new filter entry in the menu
     var doneSel = d3.select("#userColors").append("tr");
+    /*
     doneSel.append("td").append("input")
         .attr("type","checkbox")
         .attr("name", doneSelection)
         .classed("userAddedColor",true)
         .property("checked","true");
+        */
+    doneSel.append("td").append("svg")
+        .attr("width", CV.colorLegendWidth)
+        .attr("height", CV.colorLegendHeight)
+        .append("circle")
+            .datum( doneSelection)
+            .attr("cx", CV.colorLegendWidth / 2)
+            .attr("cy", CV.colorLegendHeight / 2)
+            .attr("r", (CV.colorLegendHeight / 2) - 1)
+            .classed("userAddedColor",true)
+            .style("stroke", "rgb(150,150,150)")
+            .style("stroke-width", "1.0px")
+            .style("fill", colorAssigned);
     doneSel.append("td")
         .text(doneSelection);
     // Perform coloring
-    var colorAssigned = CV.custom_color_scale( doneSelection);
     d3.selectAll(".node").each( function(d) {
         if (check_grp( selections, d) ) {
             // Add pie chart color
@@ -351,6 +382,20 @@ function handle_gene() {
     });
 }
 
+// Callback when gene checkbox is clicked on color tab
+function handle_gene_color() {
+    var that = this; // 'that' is used for closure
+    // The 'this' context here is for element clicked.
+    // Uncheck a previous gene value
+    d3.selectAll("#colorGeneSelector input").each( function() {
+        if (this.checked == true) {
+            if ( (this.name == that.name) && (this.value != that.value) ) {
+                this.checked = false;
+            }
+        }
+    });
+}
+
 // Callback when user clicks on checkbox to group by gender
 function handle_group_gender() {
     if (this.checked == true) {
@@ -379,7 +424,7 @@ function handle_group_litter() {
     draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
-// Callback when user clicks on checkbox to group by litter
+// Callback when user clicks on checkbox to group by genotype
 function handle_group_gene() {
     if (this.checked == true) {
         CV.formattedData.add_format( "geneCheck", create_gene_format);
@@ -587,6 +632,26 @@ function handle_hover_info( thisNode) {
             .attr("x", xpos).attr("y", ypos);
 }
 
+function handle_search() {
+    d3.select("#searchError").style("display","none");
+    var searchId = d3.select("#searchMouse").property("value");
+    var foundMouse = d3.selectAll(".node").filter( function(d) { 
+        return d.mouseId == searchId; } );
+    if (!foundMouse.empty()) {
+        handle_hover_info( foundMouse);
+        handle_mouseover( foundMouse);
+        foundMouse.transition().delay(300).style("stroke","rgba(255,255,255,0)")
+            .transition().duration(1000).style("stroke","rgba(250,200,0,1)")
+            .style("stroke-width","14px")
+            .transition().delay(1300).style("stroke","rgba(255,255,255,0)")
+            .transition().delay(1600).duration(1000).style("stroke","rgba(250,200,0,0.7)")
+            .style("stroke-width","3px");
+    }
+    else {
+        d3.select("#searchError").style("display","inline");
+    }
+}
+
 function handle_mouseover( thisNode) {
     if (thisNode.datum().mouseId) { //only highlight nodes, not hierarchy circles
         //undo any previous selection
@@ -640,9 +705,11 @@ function create_initial_view( initNodes) {
     d3.select("#doneGenotypeFilter").on("click", handle_done_geno_filter);
     d3.select("#allGeno").on("click", handle_all_geno_filter);
     d3.selectAll("#geneSelector input").on("click", handle_gene);
+    d3.selectAll("#colorGeneSelector input").on("click", handle_gene_color);
     d3.selectAll("#genderFilter input").on("click", handle_filter_gender);
     d3.select("#addGenotypeColor").on("click", handle_add_geno_color);
     d3.select("#doneGenotypeColor").on("click", handle_done_geno_color);
+    d3.select("#submitSearch").on("click", handle_search);
 
     // Use default color selection indicated by DOM dropdown element
     var colorOption = d3.select("#selectColorGroup").node();
