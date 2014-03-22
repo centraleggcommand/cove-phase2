@@ -65,7 +65,6 @@ def get_json_lineage( rootId):
         return json.dumps( get_lineage( rootId) )
 
 ################################################
-# The following functions support the force_view
 
 def mouse_json(mObj):
     return {
@@ -98,9 +97,15 @@ def all_mice_gen():
         for mouse in gen:
             childCounter[mouse['fatherId']] += 1
             childCounter[mouse['motherId']] += 1
-    # Save counts in each mouse
+    # Attach calculated info with mice data
+    #allMiceRef = Mouse.objects.values("mouseId", "fatherId", "motherId", "gender","gene1","gene2","gene3",
+    #                                       "genotype1", "genotype2", "genotype3", "generation")
+    allMiceRef = Mouse.objects.values("mouseId", "fatherId", "motherId", "gender")
     for gen in allMice:
         for mouse in gen:
+            # Save counts in each mouse
             mouse['numOffspring'] = childCounter[mouse['mouseId']]
+            # Insert lineage info for each mouse
+            mouse['lineage'] = lineage( mouse['mouseId'], allMiceRef)
 
     return json.dumps( allMice)

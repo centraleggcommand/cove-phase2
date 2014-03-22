@@ -5,7 +5,6 @@
  * http://wimbledon.prcweb.co.uk/whoplayedwhom.html
  */
 
-// This file is dependent on and extends functionality of javascript within pack_view.html
 
 // Determine all parent-child paths
 // Apply endpoint translations according to generation group
@@ -34,7 +33,7 @@ function create_control_point( src, tgt) {
     // Convert slope to decimal
     delta.y = delta.y/delta.x;
     delta.x = 1;
-    var perpendicularSlope = 1/(-delta.y);
+    var perpendicularSlope = 1/(delta.y);
     var offset = distance / 8;
     var cpt = {'x':midpoint.x + offset, 'y':midpoint.y + (perpendicularSlope * offset)};
     if (cpt.y < 0) {

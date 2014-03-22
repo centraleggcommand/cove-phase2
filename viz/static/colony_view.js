@@ -2,8 +2,10 @@
  * Created by user on 2/8/14.
  */
 
-// The var CV is a container for global data to be referenced explicitly.
-var CV = {};
+// Containers for global data to be referenced explicitly.
+var CV = {}; //data for general colony view
+var IV = {}; //data related to lineage tree
+    
 
 // Allow function currying - copied from "Javascript: The Good Parts" by Crockford
 Function.prototype.curry = function() {
@@ -167,13 +169,25 @@ function initialize( miceData, currDomain) {
     CV.size_by = function() { return 1;}
 
     CV.width = 950,
-    CV.height = 450;
-    CV.infoHeight = 500;
-    CV.infoWidth = 500;
+    CV.height = 550;
+    CV.infoHeight = 150;
+    CV.infoWidth = 350;
+    CV.infoXpos = 0;
+    CV.infoYpos = 30;
 
     CV.href_individual = function(val) {
         return "http://" + currDomain + "/viz/lineage_view/?mouseId=" + val;
     };
+
+    // Initialization for lineage tree
+    IV.width = CV.infoWidth;
+    IV.height = CV.height - CV.infoHeight;
+    
+    IV.tree = d3.layout.tree()
+        .size([IV.height - 20, IV.width - 20]);
+    
+    IV.diagonal = d3.svg.diagonal()
+    .projection(function(d) { return [d.y, d.x]; });
 
     CV.genFoci = [];
     // Estimate boundary circle of each generation to assign layout size
@@ -593,25 +607,97 @@ function handle_user_filter() {
     draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
-function handle_hover_info( thisNode) {
-    var xpos = 20;
-    var ypos = 30;
+ // referenced http://bl.ocks.org/sjengle/5432385
+// Return value is d3 selection of created tooltip
+function add_tooltip( thisNode, tclass) {
+    //var x = parseFloat(circle.attr("cx"));
+    //var y = parseFloat(circle.attr("cy"));
+    //var circle = d3.select(element);
+    //var r = parseFloat(circle.attr("r"));
+    var r = parseFloat(thisNode.attr("r"));
+    var text = "ID " + thisNode.datum().mouseId;
+
+    //Position of text dependent on parent transform, combined with transform here
+    //var parent = d3.select(element.parentNode);
+    var parent = d3.select(thisNode.node().parentNode);
+    var xpos = thisNode.attr("cx");
+    var ypos = thisNode.attr("cy") - 15;
+    var tooltip = parent.append("text")
+        .text(text)
+        //.style("fill","#2E8AE6")
+        .attr("transform", "translate(" + xpos + "," + ypos + ")")
+        .classed(tclass, true);
+
+    //var plotWidth = parent.node().getBBox().width;
+    // Guess position of text relative to borders and adjust if needed
+    //var tooltipBBox = tooltip.node().getBBox();
+
+    if ( xpos < 25) {
+        tooltip.attr("text-anchor", "start");
+    }
+    else if ( xpos > CV.width - CV.infoWidth) {
+        tooltip.attr("text-anchor", "end");
+    }
+    else {
+        tooltip.attr("text-anchor", "middle");
+    }
+    return tooltip;
+
+}
+
+function handle_hover_info( thisNode, tclass) {
+    var xpos = CV.infoXpos;
+    var ypos = CV.infoYpos;
     if ( typeof CV.infoText == 'undefined') {
-        d3.select("#mouseInfoDiv svg")
+        d3.select("#mouseDetails")
             .append("rect")
-            .attr("height", CV.infoHeight - 20)
-            .attr("width", CV.infoWidth - 20)
+            .attr("height", CV.infoHeight)
+            .attr("width", CV.infoWidth)
             .attr("x", xpos)
             .attr("y", ypos)
             .attr("rx", 20)
             .attr("ry", 20)
-            .style("fill","rgba(250,241,133,0.3");
-        CV.infoText = d3.select("#mouseInfoDiv svg")
+            .style("fill","rgba(250,241,133,0.6");
+        CV.infoText = d3.select("#mouseDetails")
             .append("text")
+            .text(" ")
             .attr("x", xpos)
             .attr("y", ypos);
+
     }
+    // create background color for lineage tree
+    if ( d3.select("#lineageGraph rect").empty() ) {
+        var graph = d3.select("#lineageGraph");
+        graph.append("rect")
+            .attr("height", IV.height)
+            .attr("width", IV.width)
+            .attr("x", CV.infoXpos)
+            .attr("y", CV.infoYpos)
+            .attr("rx", 20)
+            .attr("ry", 20)
+            .style("fill","rgba(250,241,133,0.6");
+        var transX = IV.width/2 - IV.height/2 - 30;
+        var transY = IV.height/2 - IV.width/2 - 30;
+        IV.svg = graph.append("g")
+            .attr("id", "plot")
+            // default tree expands from left to right
+            // flip to expand from bottom to top
+            // the initial coordinates of the nodes are determined by
+            // the generator IV.tree.nodes
+            .attr("transform", "translate(" + transX + "," + transY + ") rotate(-90 " + (IV.height/2 ) + " " + (IV.width/2) + ")");
+        IV.infoText = graph
+            .append("text")
+            .text("Click on mouse to display lineage tree")
+            .style("font-style", "italic")
+            .attr("x", CV.infoXpos)
+            .attr("y", CV.infoYpos);
+    }
+    d3.select("." + tclass).remove();
+    add_tooltip( thisNode, tclass);
+
     //Update details shown
+    var xpos = CV.infoXpos;
+    var ypos = CV.infoYpos;
     ypos += 30;
     CV.infoText.text("Details of mouse " + thisNode.datum().mouseId);
     CV.infoText.append("tspan").text( "Generation: " + thisNode.datum().generation)
@@ -624,7 +710,7 @@ function handle_hover_info( thisNode) {
             .attr("x", xpos).attr("y", ypos);
     //second column
     ypos = 60;
-    xpos += 180;
+    xpos += 150;
     CV.infoText.append("tspan").text( "Gender: " + thisNode.datum().gender)
             .attr("x", xpos).attr("y", ypos);
     ypos += 20;
@@ -642,13 +728,75 @@ function handle_hover_info( thisNode) {
             .attr("x", xpos).attr("y", ypos);
 }
 
+function handle_node_click( thisNode) {
+    var nodes = IV.tree.nodes(thisNode.datum().lineage);
+    var links = IV.tree.links(nodes);
+    var graph = d3.select("#lineageGraph");
+    // cleanup previous drawing
+    IV.svg.selectAll(".node").remove();
+    IV.svg.selectAll(".link").remove();
+
+    // Update heading above lineage tree
+    IV.infoText.text("Lineage tree for mouse " + thisNode.datum().mouseId);
+    IV.infoText.style("font-style", "normal");
+
+    // Create lineage tree
+    var link = IV.svg.selectAll(".link")
+        .data(links)
+      .enter()
+    	.append("path")
+        .attr("class", "link")
+        .style("fill", "none")
+        .style("stroke", "#cccccc")
+        .style("stroke-width", "1.5px")
+        .attr("d", IV.diagonal);
+    
+    var nodeElements = IV.svg.selectAll(".node")
+        .data(nodes)
+      .enter().append("g")
+        .attr("class", "node")
+        .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+        // Make absolute position info easier to access for child elements that maintain relative position.
+        .attr("x", function( d) { return d.x;})
+        .attr("y", function( d) { return d.y;});
+    
+    nodeElements.append("circle")
+        .attr("r", 4.5)
+        .style("fill", function(d) {
+            if(d.gender == "F") {
+                return "#FF7575";
+            }
+            else {
+                return "#3366FF";
+            }
+        })
+        .on("mouseover", function() {
+            //undo any previous selection
+            d3.select(".lineageHovered")
+                    .classed("lineageHovered", false)
+                    .style("stroke", "rgb(150, 150, 150)")
+                    .style("stroke-width", "1.0px");
+            var thisNode = d3.select(this);
+            thisNode.classed("lineageHovered", true)
+                .style( "stroke", "rgb(250,250,0)")
+                .style("stroke-width", "3px");
+            // removes all tooltips
+            d3.select(".lineageTooltip").remove();
+            var ttip = add_tooltip( thisNode, "lineageTooltip"); 
+            ttip.attr("transform", "translate(20,0) rotate(90)");
+            //trigger highlight in main gen view
+            var matchMouse = d3.selectAll("#graph .node").filter( function(d) { 
+                return d.mouseId == thisNode.datum().mouseId; } );
+            handle_mouseover( matchMouse);
+            });
+}
+
 function handle_search() {
     d3.select("#searchError").style("display","none");
     var searchId = d3.select("#searchMouse").property("value");
     var foundMouse = d3.selectAll(".node").filter( function(d) { 
         return d.mouseId == searchId; } );
     if (!foundMouse.empty()) {
-        handle_hover_info( foundMouse);
         handle_mouseover( foundMouse);
         foundMouse.transition().delay(300).style("stroke","rgba(255,255,255,0)")
             .transition().duration(1000).style("stroke","rgba(250,200,0,1)")
@@ -691,19 +839,27 @@ function handle_mouseover( thisNode) {
                 .classed("pathHovered", true)
                 .style("stroke", "rgba(130,230,190,0.5)");
         //show info on selected node
-        handle_hover_info( thisNode);
+        handle_hover_info( thisNode, "genHover");
     }
 }
 
 function create_initial_view( initNodes) {
     CV.svg = d3.select("#graph").append("svg")
-            .attr("width", CV.width)
+            .attr("width", CV.width + CV.infoWidth + 150)
             .attr("height", CV.height);
 
     // Mouse info is left blank until hover event occurs
-    d3.select("#mouseInfoDiv").append("svg")
+    d3.select("#mouseInfoDetails")
+        .append("svg")
+            .attr("id", "mouseDetails")
             .attr("width", CV.infoWidth)
             .attr("height", CV.infoHeight);
+
+    d3.select("#mouseInfoLineage")
+        .append("svg")
+            .attr("id", "lineageGraph")
+            .attr("width",  IV.width)
+            .attr("height", IV.height);
 
     // Add event handlers to various view options
     d3.select("#selectColorGroup").on("change", handle_color);
@@ -751,38 +907,12 @@ function create_initial_view( initNodes) {
                 .on("mouseover", function() {
                     var thisNode = d3.select(this);
                     handle_mouseover( thisNode);
-                    /*
-                    if (thisNode.datum().mouseId) { //only highlight nodes, not hierarchy circles
-                        //undo any previous selection
-                        if (CV.nodeHovered) {
-                            CV.nodeHovered
-                                    .classed("hovered", false)
-                                    .style("stroke", "rgb(150, 150, 150)")
-                                    .style("stroke-width", "1.0px");
-                        }
-                        if (CV.pathsDisplayed) {
-                            CV.pathsDisplayed
-                                    .classed("pathHovered", false)
-                                    .style("stroke", "rgba(255,255,255,0");
-                        }
-                        thisNode
-                                .classed("hovered", true)
-                                .style( "stroke", "rgb(250,250,0)")
-                                .style("stroke-width", "3px");
-                        CV.nodeHovered = thisNode;
-                        CV.pathsDisplayed = CV.svg.selectAll("path").filter( function(d) {
-                            if ((d[0].id == thisNode.datum().mouseId) || (d[2].id == thisNode.datum().mouseId) ) {
-                                return true;
-                            }
-                            else return false;
-                        });
-                        CV.pathsDisplayed
-                                .classed("pathHovered", true)
-                                .style("stroke", "rgba(130,230,190,0.5"));
-                        //show info on selected node
-                        handle_hover_info( thisNode);
+                })
+                .on("click", function() {
+                    var thisNode = d3.select(this);
+                    if (thisNode.datum().mouseId) { //ignore hierarchy circles
+                        handle_node_click( thisNode);
                     }
-                    */
                 })
                 .on("dblclick", function() {
                     var thisNode = d3.select(this);
