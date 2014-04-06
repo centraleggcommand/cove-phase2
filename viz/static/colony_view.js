@@ -253,8 +253,8 @@ function handle_size() {
     }
     CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
     update_view( CV.nodeLayout);
-    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
-    draw_arrows( CV.svg, lines, AR.line_generator);
+    //var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    //draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
 
@@ -443,8 +443,8 @@ function handle_group_gender() {
     }
     CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
     update_view( CV.nodeLayout);
-    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
-    draw_arrows( CV.svg, lines, AR.line_generator);
+    //var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    //draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
 // Callback when user clicks on checkbox to group by litter
@@ -457,8 +457,8 @@ function handle_group_litter() {
     }
     CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
     update_view( CV.nodeLayout);
-    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
-    draw_arrows( CV.svg, lines, AR.line_generator);
+    //var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    //draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
 // Callback when user clicks on checkbox to group by genotype
@@ -471,8 +471,8 @@ function handle_group_gene() {
     }
     CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
     update_view( CV.nodeLayout);
-    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
-    draw_arrows( CV.svg, lines, AR.line_generator);
+    //var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    //draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
 // Callback when gender filter is clicked
@@ -503,8 +503,8 @@ function handle_filter_gender() {
     CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
     update_view( CV.nodeLayout);
     //update_color();
-    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
-    draw_arrows( CV.svg, lines, AR.line_generator);
+    //var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    //draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
 function handle_add_geno_filter() {
@@ -562,9 +562,9 @@ function handle_done_geno_filter() {
     CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
     update_view( CV.nodeLayout);
     //update_color();
-    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    //var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
     //draw_arrows( CV.svg, lines, AR.line_generator);
-    setTimeout( function() { draw_arrows( CV.svg, lines, AR.line_generator);}, 5000);
+    //setTimeout( function() { draw_arrows( CV.svg, lines, AR.line_generator);}, 5000);
 }
 
 function handle_all_geno_filter() {
@@ -581,8 +581,8 @@ function handle_all_geno_filter() {
     CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
     update_view( CV.nodeLayout);
     //update_color();
-    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
-    draw_arrows( CV.svg, lines, AR.line_generator);
+    //var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    //draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
 function handle_user_filter() {
@@ -616,8 +616,8 @@ function handle_user_filter() {
     CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
     update_view( CV.nodeLayout);
     //update_color();
-    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
-    draw_arrows( CV.svg, lines, AR.line_generator);
+    //var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+    //draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
  // referenced http://bl.ocks.org/sjengle/5432385
@@ -1224,6 +1224,10 @@ function update_view( nodeLayouts) {
         var genSelect = d3.select("#g" + i).selectAll(".gen" + i)
             .data(nodeLayouts[i], function(d) {
                 return d.mouseId ? d.mouseId : d.name; });
+        // when the last gen is being updated, indicate ok to schedule arrow update
+        if (i == nodeLayouts.length - 1) {
+            CV.arrowReady = true;
+        }
         // Add any inner hierarchy circles
         genSelect.enter()
             .insert("circle")
@@ -1241,18 +1245,25 @@ function update_view( nodeLayouts) {
         // Update nodes
         genSelect.each( function(nodeData) {
             var thisNode = d3.select(this);
-            thisNode.transition()
+            var thisTran = thisNode.transition()
                 .delay(700 * Math.pow(i, 1.5)).duration(1400 * Math.pow(i, 1.5))
                 .style("stroke", function(d) {
                     return typeof d.colorGroup !== 'undefined' ? d.colorGroup : "rgba(150,150,150,0.9)" })
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
-                .attr("r", function(d) { return CV.fit_scale(d.r); });
+                .attr("r", function(d) { return CV.fit_scale(d.r); })
+            if (CV.arrowReady) {
+                thisTran.transition().call( function() {
+                    var lines = find_endpoints( CV.nodeLayout, CV.genFoci);
+                    draw_arrows( CV.svg, lines, AR.line_generator);
+                });
+                // Only execute once
+                CV.arrowReady = false;
+            }
             var colorOption = d3.select("#selectColorGroup").node();
             var colorBy = colorOption.options[colorOption.selectedIndex].value;
             var pieNode = d3.selectAll(".pie-" + nodeData.mouseId);
             if ( (colorBy == "customGenotype") && !pieNode.empty() ) {
-                // wait for node to arrive at final position before overlaying pie node
                 pieNode.transition().delay(700 * Math.pow(i, 1.5)).duration(1400 * Math.pow(i, 1.5))
                     .attr("transform", "translate(" + nodeData.x + "," + nodeData.y + ")")
                     .style("opacity","1");
