@@ -93,10 +93,14 @@ def all_mice_gen():
         querySize = len(genQuery)
     # Calculate number of children a mouse has spawned
     childCounter = collections.defaultdict(int)
+    # Save all mouse ids of children
+    childIds = collections.defaultdict(list)
     for gen in allMice:
         for mouse in gen:
             childCounter[mouse['fatherId']] += 1
             childCounter[mouse['motherId']] += 1
+            childIds[mouse['fatherId']].append( mouse['mouseId'])
+            childIds[mouse['motherId']].append( mouse['mouseId'])
     # Attach calculated info with mice data
     #allMiceRef = Mouse.objects.values("mouseId", "fatherId", "motherId", "gender","gene1","gene2","gene3",
     #                                       "genotype1", "genotype2", "genotype3", "generation")
@@ -107,5 +111,7 @@ def all_mice_gen():
             mouse['numOffspring'] = childCounter[mouse['mouseId']]
             # Insert lineage info for each mouse
             mouse['lineage'] = lineage( mouse['mouseId'], allMiceRef)
+            # Insert children's ids
+            mouse['childIds'] = childIds[mouse['mouseId']]
 
     return json.dumps( allMice)

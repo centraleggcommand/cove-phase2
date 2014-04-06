@@ -298,13 +298,15 @@ function create_pie_node( thisNode) {
     var ypos = thisNode.attr("cy");
 
     // create new pie based on mouseId; separate g for each segment of pie
-    var pieSel = CV.svg.select("#g" +nodeData.generation).selectAll(".pie-" + nodeData.mouseId);
-    if ( !pieSel.empty()) {
-        pieSel.attr("transform", "translate(" + xpos + "," + ypos + ")");
-        pieSel.selectAll("path").remove();
-    }
+    var pieSel = CV.svg.select("#g" +nodeData.generation)
+        .selectAll(".pie-" + nodeData.mouseId).data( CV.pie( nodeData.colorGrp));
+    //if ( !pieSel.empty()) {
+    //    pieSel.attr("transform", "translate(" + xpos + "," + ypos + ")");
+    //    pieSel.selectAll("path").remove();
+    //}
     // add new pie segments
-    pieSel.data( CV.pie( nodeData.colorGrp)).enter()
+    //pieSel.data( CV.pie( nodeData.colorGrp)).enter()
+    pieSel.enter()
         .append("g")
             .attr("class", "pie-" + nodeData.mouseId)
             // class to make invisible when user coloring option changes
@@ -315,13 +317,24 @@ function create_pie_node( thisNode) {
                 .style("fill", function(d,i) { 
                     return CV.custom_color_scale( d.data); });
     // change existing pie segments
-    pieSel.append("path")
+    //pieSel.append("path")
+    pieSel.attr("transform", "translate(" + xpos + "," + ypos + ")");
+    pieSel.selectAll("path")
         .attr("d", CV.arc)
         .style("fill", function(d) { 
             return CV.custom_color_scale( d.data); });
 
 }
 
+// This is similar to create_pie_node but does not deal with adding additional pie segments
+function update_pie_node( pieNode, nodeData) { 
+
+    // Make the size of the pie the same as node it is replacing
+    var radius = nodeData.r;
+    CV.arc.outerRadius( radius);
+    pieNode.attr("transform", "translate(" + nodeData.x + "," + nodeData.y + ")")
+        .attr("d", CV.arc)
+}
 
 CV.colorLegendWidth = 20;
 CV.colorLegendHeight = 20;
@@ -692,6 +705,13 @@ function handle_hover_info( thisNode, tclass) {
             .style("font-style", "italic")
             .attr("x", CV.infoXpos)
             .attr("y", CV.infoYpos -5);
+        IV.svgChildNodes = graph.append("g")
+            .attr("id", "childrenPlot");
+        IV.childInfoText = IV.svgChildNodes
+            .append("text")
+            .text(" ")
+            .attr("x", CV.infoXpos)
+            .attr("y", CV.infoYpos + IV.height - IV.childBlock);
     }
     d3.select("." + tclass).remove();
     add_tooltip( thisNode, tclass);
@@ -736,6 +756,7 @@ function handle_node_click( thisNode) {
     // cleanup previous drawing
     IV.svg.selectAll(".lineageNode").remove();
     IV.svg.selectAll(".link").remove();
+    d3.select(".lineageTooltip").remove();
 
     // Update heading above lineage tree
     IV.infoText.text("Lineage tree for mouse " + thisNode.datum().mouseId);
@@ -767,9 +788,10 @@ function handle_node_click( thisNode) {
             if(d.gender == "F") {
                 return "#FF7575";
             }
-            else {
+            else if (d.gender == "M") {
                 return "#3366FF";
             }
+            else return "#C0C0C0";
         })
         .on("mouseover", function() {
             //undo any previous selection
@@ -777,19 +799,80 @@ function handle_node_click( thisNode) {
                     .classed("lineageHovered", false)
                     .style("stroke", "rgb(150, 150, 150)")
                     .style("stroke-width", "1.0px");
-            var thisNode = d3.select(this);
-            thisNode.classed("lineageHovered", true)
+            var hoverNode = d3.select(this);
+            hoverNode.classed("lineageHovered", true)
                 .style( "stroke", "rgb(250,250,0)")
                 .style("stroke-width", "3px");
             // removes all tooltips
             d3.select(".lineageTooltip").remove();
-            var ttip = add_tooltip( thisNode, "lineageTooltip"); 
+            var ttip = add_tooltip( hoverNode, "lineageTooltip"); 
             ttip.attr("transform", "translate(20,0) rotate(90)");
             //trigger highlight in main gen view
             var matchMouse = d3.selectAll("#graph .node").filter( function(d) { 
-                return d.mouseId == thisNode.datum().mouseId; } );
+                return d.mouseId == hoverNode.datum().mouseId; } );
             handle_mouseover( matchMouse);
             });
+    // Update info header for number of children the selected mouse has
+    IV.childInfoText.text("Children: " + thisNode.datum().numOffspring);
+    // Find data belonging to children inside existing nodes in main graph
+    var treeChildren = [];
+    d3.selectAll("#graph .node").each( function(d) { 
+        if (thisNode.datum().childIds.indexOf(d.mouseId) >= 0) {
+            treeChildren.push(d);
+        }
+    } );
+    // Draw children
+    var xpos = 5;
+    var ypos = CV.infoYpos + IV.height - IV.childBlock + 40;
+    var drawnLineage = IV.svgChildNodes.selectAll(".lineageNode")
+        //.data( thisNode.datum().childIds)
+        .data( treeChildren, function (d) {
+            return d.mouseId ? d.mouseId : d.name; });
+    drawnLineage.enter().append("circle")
+        .attr("r", 4.5)
+        .attr("cx", function() { 
+            if (xpos < IV.width - 30) {
+                xpos += 20;
+                return xpos;
+            }
+            else { // make a new row
+                xpos = 5;
+                ypos += 15;
+            }
+        })
+        .attr("cy", ypos)
+        .classed("lineageNode", true)
+        .style("stroke", "rgb(150,150,150)")
+        .style("stroke-width", "1.0px")
+        .style("fill", function(d) {
+            if(d.gender == "F") {
+                return "#FF7575";
+            }
+            else if (d.gender == "M") {
+                return "#3366FF";
+            }
+            else return "#C0C0C0";
+        })
+        .on("mouseover", function() {
+            //undo any previous selection
+            d3.select(".lineageHovered")
+                    .classed("lineageHovered", false)
+                    .style("stroke", "rgb(150, 150, 150)")
+                    .style("stroke-width", "1.0px");
+            var hoverNode = d3.select(this);
+            hoverNode.classed("lineageHovered", true)
+                .style( "stroke", "rgb(250,250,0)")
+                .style("stroke-width", "3px");
+            // removes all tooltips
+            d3.select(".lineageTooltip").remove();
+            var ttip = add_tooltip( hoverNode, "lineageTooltip"); 
+            //ttip.attr("transform", "translate(20,0) rotate(90)");
+            //trigger highlight in main gen view
+            var matchMouse = d3.selectAll("#graph .node").filter( function(d) { 
+                return d.mouseId == hoverNode.datum().mouseId; } );
+            handle_mouseover( matchMouse);
+            });
+    drawnLineage.exit().remove();
 }
 
 function handle_search() {
@@ -904,6 +987,7 @@ function create_initial_view( initNodes) {
     var colorBy = colorOption.options[colorOption.selectedIndex].value;
     if (colorBy == "gender") { CV.color_fxn = assign_gender_color; }
     else if (colorBy == "genotype") { CV.color_fxn = assign_genotype_color;}
+    else { CV.color_fxn = assign_gender_color; }
 
     for (var i=0; i < initNodes.length; i++) {
         var genGrp = CV.svg.append("g").datum(i)
@@ -1137,29 +1221,48 @@ function update_view( nodeLayouts) {
     }
     // Go through each generation in nodeLayout
     for (var i=0; i < nodeLayouts.length; i++) {
-        var genSelect = d3.select("#g" + i).selectAll(".gen" + i).data(nodeLayouts[i], function(d) {
-            return d.mouseId ? d.mouseId : d.name; });
+        var genSelect = d3.select("#g" + i).selectAll(".gen" + i)
+            .data(nodeLayouts[i], function(d) {
+                return d.mouseId ? d.mouseId : d.name; });
         // Add any inner hierarchy circles
         genSelect.enter()
-                .insert("circle")
-                .attr("cx", function(d) { return d.x; })
-                .attr("cy", function(d) { return d.y; })
-                .attr("r", function(d) { return CV.fit_scale(d.r); })
-                .classed("node", function(d) { return d.mouseId ? true : false; })
-                .classed("gen" + i, "true")
-                .style("stroke", "rgba(150,150,150,0.1)")
-                .style("stroke-width", "1.0px")
-                .style("fill", function(d) { return d.mouseId ? CV.color_fxn(d) : "rgba(255,255,255,0)";} );
+            .insert("circle")
+            .attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; })
+            .attr("r", function(d) { return CV.fit_scale(d.r); })
+            .classed("node", function(d) { return d.mouseId ? true : false; })
+            .classed("gen" + i, "true")
+            .style("stroke", "rgba(150,150,150,0.1)")
+            .style("stroke-width", "1.0px")
+            .style("fill", function(d) { return d.mouseId ? CV.color_fxn(d) : "rgba(255,255,255,0)";} );
         // Remove any hierarchy circles not needed
         genSelect.exit()
-                .transition().duration(1200).style("stroke", "rgba(150, 150, 150, .2").remove();
+            .transition().duration(1200).style("stroke", "rgba(150, 150, 150, .2").remove();
         // Update nodes
-        genSelect.transition().delay(700 * Math.pow(i, 1.5)).duration(1400 * Math.pow(i, 1.5))
+        genSelect.each( function(nodeData) {
+            var thisNode = d3.select(this);
+            thisNode.transition()
+                .delay(700 * Math.pow(i, 1.5)).duration(1400 * Math.pow(i, 1.5))
                 .style("stroke", function(d) {
                     return typeof d.colorGroup !== 'undefined' ? d.colorGroup : "rgba(150,150,150,0.9)" })
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
                 .attr("r", function(d) { return CV.fit_scale(d.r); });
+            var colorOption = d3.select("#selectColorGroup").node();
+            var colorBy = colorOption.options[colorOption.selectedIndex].value;
+            var pieNode = d3.selectAll(".pie-" + nodeData.mouseId);
+            if ( (colorBy == "customGenotype") && !pieNode.empty() ) {
+                // wait for node to arrive at final position before overlaying pie node
+                pieNode.transition().delay(700 * Math.pow(i, 1.5)).duration(1400 * Math.pow(i, 1.5))
+                    .attr("transform", "translate(" + nodeData.x + "," + nodeData.y + ")")
+                    .style("opacity","1");
+                // check if the update has caused the size of the node to change
+                if (thisNode.attr("r") != CV.fit_scale(nodeData.r)) {
+                    CV.arc.outerRadius( nodeData.r);
+                    pieNode.selectAll("path").attr("d", CV.arc);
+                }
+            }
+        });
     }
     d3.selectAll(".node").on("mouseover", function() {handle_mouseover( d3.select(this)); });
 }
