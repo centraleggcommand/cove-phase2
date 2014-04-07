@@ -786,6 +786,7 @@ function handle_node_click( thisNode) {
         .attr("x", function( d) { return d.x;})
         .attr("y", function( d) { return d.y;});
     
+    var matchMouse;
     nodeElements.append("circle")
         .attr("r", 4.5)
         .style("fill", function(d) {
@@ -812,10 +813,14 @@ function handle_node_click( thisNode) {
             var ttip = add_tooltip( hoverNode, "lineageTooltip"); 
             ttip.attr("transform", "translate(20,0) rotate(90)");
             //trigger highlight in main gen view
-            var matchMouse = d3.selectAll("#graph .node").filter( function(d) { 
+            matchMouse = d3.selectAll("#graph .node").filter( function(d) { 
                 return d.mouseId == hoverNode.datum().mouseId; } );
             handle_mouseover( matchMouse);
-            });
+            })
+        .on("click", function() {
+            var thisNode = d3.select(this);
+            handle_node_click( matchMouse);
+        })
     // Update info header for number of children the selected mouse has
     IV.childInfoText.text("Children: " + thisNode.datum().numOffspring);
     // Find data belonging to children inside existing nodes in main graph
@@ -826,25 +831,22 @@ function handle_node_click( thisNode) {
         }
     } );
     // Draw children
-    var xpos = 5;
-    var ypos = CV.infoYpos + IV.height - IV.childBlock + 40;
+    var ypos = CV.infoYpos + IV.height - IV.childBlock + 30;
     var drawnLineage = IV.svgChildNodes.selectAll(".lineageNode")
         //.data( thisNode.datum().childIds)
         .data( treeChildren, function (d) {
             return d.mouseId ? d.mouseId : d.name; });
+    var childRadius = 4.5;
+    var nodesPerLine = Math.floor( (IV.width - (childRadius*6))/(childRadius*4) );
+    var matchMouse2;
     drawnLineage.enter().append("circle")
-        .attr("r", 4.5)
-        .attr("cx", function() { 
-            if (xpos < IV.width - 30) {
-                xpos += 20;
-                return xpos;
-            }
-            else { // make a new row
-                xpos = 5;
-                ypos += 15;
-            }
+        .attr("r", childRadius)
+        .attr("cx", function(d,i) { 
+            return 10 + (i % nodesPerLine) * childRadius*4;
         })
-        .attr("cy", ypos)
+        .attr("cy", function(d,i) {
+            return ypos + Math.floor(i/nodesPerLine) * 25;
+        })
         .classed("lineageNode", true)
         .style("stroke", "rgb(150,150,150)")
         .style("stroke-width", "1.0px")
@@ -872,10 +874,14 @@ function handle_node_click( thisNode) {
             var ttip = add_tooltip( hoverNode, "lineageTooltip"); 
             //ttip.attr("transform", "translate(20,0) rotate(90)");
             //trigger highlight in main gen view
-            var matchMouse = d3.selectAll("#graph .node").filter( function(d) { 
+            matchMouse2 = d3.selectAll("#graph .node").filter( function(d) { 
                 return d.mouseId == hoverNode.datum().mouseId; } );
-            handle_mouseover( matchMouse);
-            });
+            handle_mouseover( matchMouse2);
+            })
+        .on("click", function() {
+            var thisNode = d3.select(this);
+            handle_node_click( matchMouse2);
+        })
     drawnLineage.exit().remove();
 }
 
