@@ -298,8 +298,11 @@ function create_pie_node( thisNode) {
     var ypos = thisNode.attr("cy");
 
     // create new pie based on mouseId; separate g for each segment of pie
+    //var pieSel = CV.svg.select("#g" +nodeData.generation)
+    //    .selectAll(".pie-" + nodeData.mouseId);
     var pieSel = CV.svg.select("#g" +nodeData.generation)
-        .selectAll(".pie-" + nodeData.mouseId).data( CV.pie( nodeData.colorGrp));
+        .selectAll(".pie-" + nodeData.mouseId).data( CV.pie( nodeData.colorGrp),
+            function(d) { return d.data; });
     //if ( !pieSel.empty()) {
     //    pieSel.attr("transform", "translate(" + xpos + "," + ypos + ")");
     //    pieSel.selectAll("path").remove();
@@ -318,8 +321,9 @@ function create_pie_node( thisNode) {
                     return CV.custom_color_scale( d.data); });
     // change existing pie segments
     //pieSel.append("path")
-    pieSel.attr("transform", "translate(" + xpos + "," + ypos + ")");
-    pieSel.selectAll("path")
+    //pieSel.attr("transform", "translate(" + xpos + "," + ypos + ")");
+    pieSel.select("path")
+        // updated data bound to parent selection is passed to the arc fxn implicitly
         .attr("d", CV.arc)
         .style("fill", function(d) { 
             return CV.custom_color_scale( d.data); });
