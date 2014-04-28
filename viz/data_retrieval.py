@@ -73,6 +73,9 @@ def mouse_json(mObj):
     "litter" : mObj.litter,
     "fatherId" : mObj.fatherId,
     "motherId" : mObj.motherId,
+    "dobMonth" : mObj.dobMonth,
+    "dobDay" : mObj.dobDay,
+    "dobYear" : mObj.dobYear,
     "gene1" : mObj.gene1,
     "gene2" : mObj.gene2,
     "gene3" : mObj.gene3,
@@ -113,5 +116,14 @@ def all_mice_gen():
             mouse['lineage'] = lineage( mouse['mouseId'], allMiceRef)
             # Insert children's ids
             mouse['childIds'] = childIds[mouse['mouseId']]
+            # Combine dob info to one field
+            month = str(mouse['dobMonth'])
+            day = str(mouse['dobDay'])
+            year = str(mouse['dobYear'])
+            if mouse['dobMonth'] < 10:
+               month = '0' + month
+            if mouse['dobDay'] < 10:
+               day = '0' + day
+            mouse['dob'] = int(year + month + day)
 
     return json.dumps( allMice)

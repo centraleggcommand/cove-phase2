@@ -184,7 +184,7 @@ function initialize( miceData, currDomain) {
     IV.height = CV.height - CV.infoHeight - CV.infoYpos - 20;
     IV.childBlock = IV.height / 4;
     IV.tree = d3.layout.tree()
-        .size([IV.width - 20, IV.height - IV.childBlock - 60]);
+        .size([IV.width - 20, IV.height - IV.childBlock - 70]);
     
     IV.diagonal = d3.svg.diagonal()
     .projection(function(d) { return [d.y, d.x]; });
@@ -511,6 +511,68 @@ function handle_filter_gender() {
     //draw_arrows( CV.svg, lines, AR.line_generator);
 }
 
+function handle_filter_age() {
+   if (this.value === "All") {
+      d3.select("#dobSelector").style("display","none")
+      d3.select("#ageSelector").style("display","none")
+      // Remove any previous filter
+      CV.formattedData.remove_filter( "filterAgeRange");
+      CV.formattedData.remove_filter( "filterDOB");
+      CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+      update_view( CV.nodeLayout);
+   }
+   else if (this.value === "Date") {
+      d3.select("#dobSelector").style("display","inline")
+      d3.select("#ageSelector").style("display","none")
+   }
+   else {
+      d3.select("#ageSelector").style("display","inline")
+      d3.select("#dobSelector").style("display","none")
+   }
+}
+
+function handle_filter_dob() {
+    // Remove any previous filter
+    CV.formattedData.remove_filter( "filterDOB");
+    CV.formattedData.remove_filter( "filterAgeRange");
+    var start = parseInt(d3.select("#dateStart").property("value").replace(/-/g, ""));
+    var end = parseInt(d3.select("#dateEnd").property("value").replace(/-/g, ""));
+    CV.formattedData.add_filter( "filterDOB", 
+         perform_filter_range.curry("dob", start, end) );
+    // Re-draw
+    CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+    update_view( CV.nodeLayout);
+}
+
+function handle_filter_age_range() {
+    // Remove any previous filter
+    CV.formattedData.remove_filter( "filterAgeRange");
+    CV.formattedData.remove_filter( "filterDOB");
+    var start = parseInt(d3.select("#ageStart").property("value"));
+    var end = parseInt(d3.select("#ageEnd").property("value"));
+    // Convert age to a date
+    var msDay = 24 * 60 * 60 * 1000;
+    // Cannot be greater than latestDate to meet min age
+    var latestDate = new Date( Date.now() - (start * msDay));
+    // Cannot be less than earliestDate to meet max age
+    var earliestDate = new Date( Date.now() - (end * msDay));
+    var latestYear = "" + latestDate.getFullYear();
+    var latestMonth = latestDate.getMonth() + 1;
+    latestMonth = latestMonth > 9 ? "" + latestMonth : "0" + latestMonth;
+    var latestDay = latestDate.getDate();
+    latestDay = latestDay > 9 ? "" + latestDay : "0" + latestDay;
+    var earliestYear = "" + earliestDate.getFullYear();
+    var earliestMonth = earliestDate.getMonth() + 1;
+    earliestMonth = earliestMonth > 9 ? "" + earliestMonth : "0" + earliestMonth;
+    var earliestDay = earliestDate.getDate();
+    earliestDay = earliestDay > 9 ? "" + earliestDay : "0" + earliestDay;
+    CV.formattedData.add_filter( "filterAgeRange", 
+         perform_filter_range.curry("dob", parseInt(earliestYear + earliestMonth + earliestDay), parseInt(latestYear + latestMonth + latestDay)) );
+    // Re-draw
+    CV.nodeLayout = layout_generations( CV.formattedData.get_hierarchy() );
+    update_view( CV.nodeLayout);
+}
+
 function handle_add_geno_filter() {
     // Show the gene radio button selectors
     d3.selectAll(".genotypeDesc").style("display","inline")
@@ -625,18 +687,16 @@ function handle_user_filter() {
 }
 
  // referenced http://bl.ocks.org/sjengle/5432385
-// Return value is d3 selection of created tooltip
 function add_tooltip( thisNode, tclass) {
-    //var x = parseFloat(circle.attr("cx"));
-    //var y = parseFloat(circle.attr("cy"));
-    //var circle = d3.select(element);
-    //var r = parseFloat(circle.attr("r"));
     var r = parseFloat(thisNode.attr("r"));
     var text = "ID " + thisNode.datum().mouseId;
 
     //Position of text dependent on parent transform, combined with transform here
     //var parent = d3.select(element.parentNode);
     var parent = d3.select(thisNode.node().parentNode);
+    //Make a background for the text
+    var background = parent.append("rect");
+    //Create tooltip text
     var xpos = thisNode.attr("cx");
     var ypos = thisNode.attr("cy") - 15;
     var tooltip = parent.append("text")
@@ -644,21 +704,31 @@ function add_tooltip( thisNode, tclass) {
         .style("fill","black")
         .attr("transform", "translate(" + xpos + "," + ypos + ")")
         .classed(tclass, true);
-
     //var plotWidth = parent.node().getBBox().width;
     // Guess position of text relative to borders and adjust if needed
-    //var tooltipBBox = tooltip.node().getBBox();
-
+    // Apply the same adjustment to background
+    var adjustment = 0;
+    var bbox = tooltip.node().getBBox();
     if ( xpos < 25) {
         tooltip.attr("text-anchor", "start");
     }
     else if ( xpos > CV.width - CV.infoWidth) {
         tooltip.attr("text-anchor", "end");
+        adjustment = bbox.width;
     }
     else {
         tooltip.attr("text-anchor", "middle");
+        adjustment = -(bbox.width / 2);
     }
-    return tooltip;
+    //Fill out background properties based on text
+    background
+      .attr("x", bbox.x + adjustment)
+      .attr("y", bbox.y)
+      .attr("height", bbox.height)
+      .attr("width", bbox.width)
+      .attr("transform", "translate(" + xpos + "," + ypos + ")")
+      .style("fill","rgba(250,241,133,0.6")
+      .classed(tclass, true);
 
 }
 
@@ -686,7 +756,7 @@ function handle_hover_info( thisNode, tclass) {
     if ( d3.select("#lineageGraph rect").empty() ) {
         var graph = d3.select("#lineageGraph");
         graph.append("rect")
-            .attr("height", IV.height)
+            .attr("height", IV.height + IV.childBlock)
             .attr("width", IV.width)
             .attr("x", CV.infoXpos)
             .attr("y", CV.infoYpos)
@@ -717,7 +787,7 @@ function handle_hover_info( thisNode, tclass) {
             .attr("x", CV.infoXpos)
             .attr("y", CV.infoYpos + IV.height - IV.childBlock);
     }
-    d3.select("." + tclass).remove();
+    d3.selectAll("." + tclass).remove();
     add_tooltip( thisNode, tclass);
 
     //Update details shown
@@ -760,7 +830,7 @@ function handle_node_click( thisNode) {
     // cleanup previous drawing
     IV.svg.selectAll(".lineageNode").remove();
     IV.svg.selectAll(".link").remove();
-    d3.select(".lineageTooltip").remove();
+    d3.selectAll(".lineageTooltip").remove();
 
     // Update heading above lineage tree
     IV.infoText.text("Lineage tree for mouse " + thisNode.datum().mouseId);
@@ -809,9 +879,10 @@ function handle_node_click( thisNode) {
                 .style( "stroke", "rgb(250,250,0)")
                 .style("stroke-width", "3px");
             // removes all tooltips
-            d3.select(".lineageTooltip").remove();
-            var ttip = add_tooltip( hoverNode, "lineageTooltip"); 
-            ttip.attr("transform", "translate(20,0) rotate(90)");
+            d3.selectAll(".lineageTooltip").remove();
+            add_tooltip( hoverNode, "lineageTooltip"); 
+            d3.selectAll(".lineageTooltip")
+               .attr("transform", "translate(20,0) rotate(90)");
             //trigger highlight in main gen view
             matchMouse = d3.selectAll("#graph .node").filter( function(d) { 
                 return d.mouseId == hoverNode.datum().mouseId; } );
@@ -870,9 +941,8 @@ function handle_node_click( thisNode) {
                 .style( "stroke", "rgb(250,250,0)")
                 .style("stroke-width", "3px");
             // removes all tooltips
-            d3.select(".lineageTooltip").remove();
-            var ttip = add_tooltip( hoverNode, "lineageTooltip"); 
-            //ttip.attr("transform", "translate(20,0) rotate(90)");
+            d3.selectAll(".lineageTooltip").remove();
+            add_tooltip( hoverNode, "lineageTooltip"); 
             //trigger highlight in main gen view
             matchMouse2 = d3.selectAll("#graph .node").filter( function(d) { 
                 return d.mouseId == hoverNode.datum().mouseId; } );
@@ -974,7 +1044,7 @@ function create_initial_view( initNodes) {
         .append("svg")
             .attr("id", "lineageGraph")
             .attr("width",  IV.width)
-            .attr("height", IV.height);
+            .attr("height", IV.height + IV.childBlock);
 
     // Add event handlers to various view options
     d3.select("#selectColorGroup").on("change", handle_color);
@@ -988,6 +1058,9 @@ function create_initial_view( initNodes) {
     d3.selectAll("#geneSelector input").on("click", handle_gene);
     d3.selectAll("#colorGeneSelector input").on("click", handle_gene_color);
     d3.selectAll("#genderFilter input").on("click", handle_filter_gender);
+    d3.selectAll("#ageFilter input").on("click", handle_filter_age);
+    d3.select("#ageStart").on("change", handle_filter_age_range);
+    d3.select("#ageEnd").on("change", handle_filter_age_range);
     d3.select("#addGenotypeColor").on("click", handle_add_geno_color);
     d3.select("#doneGenotypeColor").on("click", handle_done_geno_color);
     d3.select("#submitSearch").on("click", handle_search);
@@ -1176,6 +1249,27 @@ function perform_filter( attrName, attrVal, rawNode) {
     return rawNode[attrName] == attrVal;
 }
 
+function perform_filter_range( attrName, attrValLow, attrValHigh, rawNode) {
+   var lowBool = false;
+   var hiBool = false;
+   var dob = parseInt(rawNode[attrName]);
+   dob = isNaN( dob) ? 0 : dob;
+   // In case a low or hi limit value is not provided, default to true
+   if (isNaN(attrValLow)) {
+      lowBool = true;
+   }
+   else {
+      lowBool = dob >= attrValLow;
+   }
+   if (isNaN(attrValHigh)) {
+      hiBool = true;
+   }
+   else {
+      hiBool = dob <= attrValHigh;
+   }
+   return lowBool && hiBool;
+}
+
 function perform_filter_set( rawNode) {
     // If no selections supplied, look for id in disabled_filter_fxns
     /*
@@ -1285,7 +1379,9 @@ function update_view( nodeLayouts) {
             }
         });
     }
-    d3.selectAll(".node").on("mouseover", function() {handle_mouseover( d3.select(this)); });
+    d3.selectAll(".node")
+      .on("mouseover", function() {handle_mouseover( d3.select(this)); })
+      .on("click", function() { handle_node_click( d3.select(this)); });
 }
 
 // The parameter color_fxn is a function with one parameter - the node data
