@@ -1,0 +1,39 @@
+{% extends "header.html" %}
+
+{% block viewHead %}
+<script src="/static/moment.min.js"></script>
+<script src="/static/age-stat.js"></script>
+<script src="/static/gene-stat.js"></script>
+
+<style>
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+</style>
+
+{% endblock %}
+
+{% block viewBody %} 
+
+<script>
+
+$(document).ready( function() {
+
+var miceGenData = JSON.parse('{{ jsonAllMice | safe }}');
+create_histogram( "ageGraph", miceGenData);
+create_gene_stack( "geneGraph", miceGenData);
+});
+
+</script>
+
+<div id="ageGraph" style="float:left;">
+<h3 style="position:center;">Number of Mice in Age Group</h3>
+</div>
+
+<div id="geneGraph" style="float:left;">
+<h3 style="position:center;">Number of Mice by Genotype</h3>
+</div>
+
+{% endblock %}

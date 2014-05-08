@@ -122,7 +122,6 @@ function addTooltip(element) {
 }
 
 var root = JSON.parse( '{{ json_lineage|safe }}' );
-console.log(root);
 var nodes = IV.tree.nodes(root);
 var links = IV.tree.links(nodes);
 

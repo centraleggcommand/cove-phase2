@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8">
+
+<script src="/static/d3.v3.min.js"></script>
+<script src="/static/jquery-2.0.3.min.js"></script>
+
+<script type="text/javascript">
+	$(document).ready(function(){
+      $("#selectView").change( function()
+      {
+         if ($(this).val() === "colony") {
+            window.location.href = "http://{{ curr_domain }}/viz/colony";
+         }
+         else
+            window.location.href = "http://{{ curr_domain }}/viz/stats";
+      });
+   });
+</script>
+
+{% block viewHead %}
+{% endblock %}
+</head>
+
+<body>
+
+<div>
+   <h2 style="text-align:center;" >COVE - Colony Visualization Environment</h2>
+   <div ><label for="selectView">View Type</label>
+      <select id="selectView"> 
+         <option value="colony" {{ colonySelect }} >Colony</option>
+         <option value="stats" {{ statsSelect }} >Stats</option>
+      </select>
+   </div>
+</div>
+
+{% block viewBody %}
+{% endblock %}
+
+</body>
+
+</html>
