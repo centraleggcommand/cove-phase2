@@ -75,15 +75,30 @@ SG.process_data = function ( miceGenData) {
       {
          // Add new gene info
          if (genes.length < 3) {
-            if (typeof (genes.find( function(e) { return e.name === elem.gene1; })) === 'undefined') {
+            //if (typeof (genes.find( function(e) { return e.name === elem.gene1; })) === 'undefined') {
+            var gene1Found = false;
+            var gene2Found = false;
+            var gene3Found = false;
+            for (var j=0; j < genes.length; j++) {
+               if (genes[j].name === elem.gene1) {
+                  gene1Found = true;
+               }
+               if (genes[j].name === elem.gene2) {
+                  gene2Found = true;
+               }
+               if (genes[j].name === elem.gene3) {
+                  gene3Found = true;
+               }
+            }
+            if (!gene1Found) {
                add_gene( elem.gene1);
                SG.resultTypes.forEach( function(r) { add_genotype( elem.gene1, r);});
             }
-            if (typeof (genes.find( function(e) { return e.name === elem.gene2; })) === 'undefined') {
+            if (!gene2Found) {
                add_gene( elem.gene2);
                SG.resultTypes.forEach( function(r) { add_genotype( elem.gene2, r);});
             }
-            if (typeof (genes.find( function(e) { return e.name === elem.gene3; })) === 'undefined') {
+            if (!gene3Found) {
                add_gene( elem.gene3);
                SG.resultTypes.forEach( function(r) { add_genotype( elem.gene3, r);});
             }
