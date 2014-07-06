@@ -4,61 +4,231 @@
 
 <!-- Reference http://bl.ocks.org/mbostock/1021841 -->
 
-<link rel="stylesheet" href="/static/jquery-ui-1.10.4/themes/base/jquery.ui.base.css">
-<link rel="stylesheet" href="/static/jquery-ui-1.10.4/themes/base/jquery.ui.theme.css">
-<link rel="stylesheet" href="/static/jquery-ui-1.10.4/themes/base/jquery.ui.tabs.css">
-<link rel="stylesheet" href="/static/jquery-ui-1.10.4/themes/base/jquery.ui.slider.css">
 <script src="/static/jquery-ui-1.10.4/ui/minified/jquery.ui.core.min.js"></script>
-<script src="/static/jquery-ui-1.10.4/ui/minified/jquery.ui.widget.min.js"></script>
-<script src="/static/jquery-ui-1.10.4/ui/minified/jquery.ui.tabs.min.js"></script>
 <script src="/static/jquery-ui-1.10.4/ui/minified/jquery.ui.datepicker.min.js"></script> 
 <script src="/static/arrows.js"></script>
 <script src="/static/colony_view.js"></script>
-<script type="text/javascript">
-	$(document).ready(function(){
-        /* Create hideable tabbed menu of options to interact with the viz */
-        $("#tabs").tabs();
-	    $("#tabset-tab").click(function(){
-			var $panel = $("#tabs");
-			if( $panel.hasClass("open") ) {
-	        	$panel.animate({"left":"-341px"}, "slow");
-                $(this).animate({"left":"0px"}, "slow");
-			}
-			else {
-	        	$panel.animate({"left":"0px"}, "slow");
-                $(this).animate({"left":"+=340px"}, "slow");
-			}
-	        $panel.toggleClass("open");
-	        $(this).toggleClass("active");
-	        return false;
-	    });
-	});
-</script>
 
 <script>
 $(function() {
-   $("#dateStart").datepicker(
-      { dateFormat: 'yy-mm-dd',
-        onSelect: function( dateText, inst) {
-           if (inst.lastVal != dateText) {
-              handle_filter_dob();
-           }
-        }
-      }
-   );
-   $("#dateEnd").datepicker(
-      { dateFormat: 'yy-mm-dd',
-        onSelect: function( dateText, inst) {
-           if (inst.lastVal != dateText) {
-              handle_filter_dob();
-           }
-        }
-      }
-   );
+
+    //Option menu should stay open when items are clicked
+    //and close only when area outside menu is clicked.
+    $("#optionContainer").click( function(e) {
+        e.stopPropagation();
+    });
+
+    $('.panel-title a').click( function() {
+        var target = $(this).attr('data-target');
+        $('#' + target).collapse('toggle');
+    });
+
+    //Option menu effect for filter section on age.
+    $("#dateStart").datepicker(
+       { dateFormat: 'yy-mm-dd',
+         onSelect: function( dateText, inst) {
+            if (inst.lastVal != dateText) {
+               handle_filter_dob();
+            }
+         }
+       }
+    );
+    $("#dateEnd").datepicker(
+       { dateFormat: 'yy-mm-dd',
+         onSelect: function( dateText, inst) {
+            if (inst.lastVal != dateText) {
+               handle_filter_dob();
+            }
+         }
+       }
+    );
 });
 </script>
 
-<link rel="stylesheet" type="text/css" href="/static/palette.css">
+
+{% endblock %}
+
+{% block optionMenu %}
+
+<div class="panel-group" id="optionContainer" style="width:400px;">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">
+                <a data-toggle="collapse" data-target="searchPanel" data-parent="#optionContainer" href="#">Search</a>
+            </h3>
+            <div class="panel-collapse collapse" id="searchPanel">
+                <div class="panel-body">
+                <table cellspacing="10">
+                    <tr><td>
+                    <label><b>MouseId: </b></label>
+                    <input id="searchMouse" type="text" name="searchbox">
+                    <input id="submitSearch" type="button" value="Find">
+                    </td></tr>
+                    <tr><td>
+                    <p id="searchError" style="color:red; display:none;">MouseId not found in the display</p>
+                    </td></tr>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">
+                <a data-toggle="collapse" data-target="filterPanel" data-parent="#optionContainer" href="#">Filter</a>
+            </h3>
+            <div class="panel-collapse collapse" id="filterPanel">
+                <div class="panel-body">
+                <table>
+                <tr><td><label><b>Gender:</b></label></td></tr>
+                <tr id="genderFilter"> <td>
+                    <input type="radio" name="gender" value="All" checked="true">All
+                    </td> <td>
+                    <input type="radio" name="gender" value="M" >Male
+                    </td> <td>
+                    <input type="radio" name="gender" value="F" >Female
+                    </td>
+                </tr>
+                </table>
+                <table>
+                <tr><td><label><b>Age:</b></label></td></tr>
+                <tr id="ageFilter"> <td>
+                    <input type="radio" name="dob" value="All" checked="true">All
+                    </td> <td>
+                    <input type="radio" name="dob" value="Date" >DOB Range
+                    </td> <td>
+                    <input type="radio" name="dob" value="Age" >Age Range
+                    </td>
+                </tr>
+                </table>
+                <table>
+                <tr id="dobSelector" style="display:none"><td><label>Begin:</label>
+                    <input id="dateStart" maxlength="12" size="12" ></td>
+                    <td><label>End:</label><input id="dateEnd" maxlength="12" size="12" ></td></tr>
+                <tr id="ageSelector" style="display:none"><td><label>Min days:</label>
+                    <input id="ageStart" maxlength="12" size="12" ></td>
+                    <td><label>Max days:</label><input id="ageEnd" maxlength="12" size="12" ></td></tr>
+                </table>
+                <table>
+                <tr><td><label><b>Genotype:</b></label></td></tr>
+                <tr> <td>
+                    <input id="allGeno" type="checkbox" name="genotypeFilter" value="All" checked="true" disabled="true">All
+                </td> </tr>
+                <tr><td>
+                    <table id="userFilters">
+                    </table>
+                </td></tr>
+                <tr id="geneSelector" class="genotypeDesc" style="display:none"><td>
+                    <label>LEF1</label><br>
+                    <input type="checkbox" name="LEF1" value="+/-">+/-<br>
+                    <input type="checkbox" name="LEF1" value="-/-">-/-<br>
+                    <input type="checkbox" name="LEF1" value="WT">WT<br>
+                </td><td>
+                    <label>RANKL</label><br>
+                    <input type="checkbox" name="RANKL" value="+/-">+/-<br>
+                    <input type="checkbox" name="RANKL" value="-/-">-/-<br>
+                    <input type="checkbox" name="RANKL" value="WT">WT<br>
+                </td><td>
+                    <label>PTHrP</label><br>
+                    <input type="checkbox" name="PTHrP" value="+/-">+/-<br>
+                    <input type="checkbox" name="PTHrP" value="-/-">-/-<br>
+                    <input type="checkbox" name="PTHrP" value="WT">WT<br>
+                </td></tr>
+                <tr id="doneRow" class="genotypeDesc" style="display:none"><td>
+                    <input id="doneGenotypeFilter" type="button" value="Done">
+                </td></tr>
+                <tr><td>
+                    <input id="addGenotypeFilter" type="image" src="/static/img/plus.png" alt="Add" width="24" height="24">
+                    Add genotype filter
+                </td></tr>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">
+                <a data-toggle="collapse" data-target="groupPanel" data-parent="#optionContainer" href="#">Group</a>
+            </h3>
+            <div class="panel-collapse collapse" id="groupPanel">
+                <div class="panel-body">
+                <table>
+                <tr> <td>
+                    <input type="checkbox" id="genderCheck" value="gender" checked="true">Gender
+                </td></tr>
+                <tr><td>
+                    <input type="checkbox" id="litterCheck" value="litter">Litter
+                </td></tr>
+<!--                <tr><td>
+                    <input type="checkbox" id="geneCheck" value="genotype">Genotype
+                </td></tr>
+-->
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">
+                <a data-toggle="collapse" data-target="imagePanel" data-parent="#optionContainer" href="#">Visual Features</a>
+            </h3>
+            <div class="panel-collapse collapse" id="imagePanel">
+                <div class="panel-body">
+                <table cellspacing="10">
+                    <tr><td>
+                        <label><b>Circle Size By: </b></label>
+                        <select id="selectSizeBy">
+                            <option value="uniform">Uniform</option>
+                            <option value="children">Number of children</option>
+                        </select>
+                    </td> </tr>
+                    <tr><td>
+                        <label><b>Color By: </b></label>
+                        <select id="selectColorGroup">
+                            <option value="gender" selected="true">Gender</option>
+                            <option value="genotype">Genotype</option>
+                            <option value="customGenotype">Custom Genotype</option>
+                        </select>
+                    </td></tr>
+                    <tr><td>
+                        <table id="userColors" class="genotypeColor" style="display:none">
+                        </table>
+                    </td></tr>
+                    <tr id="colorGeneSelector" class="genotypeColorSelect" style="display:none"><td>
+                        <label>LEF1</label><br>
+                        <input type="checkbox" name="LEF1" value="+/-">+/-<br>
+                        <input type="checkbox" name="LEF1" value="-/-">-/-<br>
+                        <input type="checkbox" name="LEF1" value="WT">WT<br>
+                    </td><td>
+                        <label>RANKL</label><br>
+                        <input type="checkbox" name="RANKL" value="+/-">+/-<br>
+                        <input type="checkbox" name="RANKL" value="-/-">-/-<br>
+                        <input type="checkbox" name="RANKL" value="WT">WT<br>
+                    </td><td>
+                        <label>PTHrP</label><br>
+                        <input type="checkbox" name="PTHrP" value="+/-">+/-<br>
+                        <input type="checkbox" name="PTHrP" value="-/-">-/-<br>
+                        <input type="checkbox" name="PTHrP" value="WT">WT<br>
+                    </td></tr>
+                    <tr id="doneColorRow" class="genotypeColorSelect" style="display:none"><td>
+                        <input id="doneGenotypeColor" type="button" value="Done">
+                    </td></tr>
+                    <tr class="genotypeColor" style="display:none"><td>
+                        <input id="addGenotypeColor" type="image" src="/static/img/plus.png" alt="Add" width="24" height="24">
+                        Add genotype color
+                    </td></tr>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+        
+</div>
 
 {% endblock %}
 
@@ -78,159 +248,8 @@ $(document).ready( function() {
 
 <div id="graph"></div>
 
-<div id="tabs">
-    <ul>
-        <li> <a href="#filter-tab-panel">Filter</a></li>
-        <li> <a href="#group-tab-panel">Group</a></li>
-        <li> <a href="#image-tab-panel">Image</a></li>
-        <li> <a href="#search-tab-panel">Search</a></li>
-    </ul>
-    <div id="filter-tab-panel" >
-        <table>
-        <tr><td><label><b>Gender</b></label></td></tr>
-        <tr id="genderFilter"> <td>
-            <input type="radio" name="gender" value="All" checked="true">All
-            </td> <td>
-            <input type="radio" name="gender" value="M" >Male
-            </td> <td>
-            <input type="radio" name="gender" value="F" >Female
-            </td>
-        </tr>
-        </table>
-        <table>
-        <tr><td><label><b>Age</b></label></td></tr>
-        <tr id="ageFilter"> <td>
-            <input type="radio" name="dob" value="All" checked="true">All
-            </td> <td>
-            <input type="radio" name="dob" value="Date" >DOB Range
-            </td> <td>
-            <input type="radio" name="dob" value="Age" >Age Range
-            </td>
-        </tr>
-        </table>
-        <table>
-        <tr id="dobSelector" style="display:none"><td><label>Begin:</label>
-            <input id="dateStart" maxlength="12" size="12" ></td>
-            <td><label>End:</label><input id="dateEnd" maxlength="12" size="12" ></td></tr>
-        <tr id="ageSelector" style="display:none"><td><label>Min days:</label>
-            <input id="ageStart" maxlength="12" size="12" ></td>
-            <td><label>Max days:</label><input id="ageEnd" maxlength="12" size="12" ></td></tr>
-        </table>
-        <table>
-        <tr><td><label><b>Genotype</b></label></td></tr>
-        <tr> <td>
-            <input id="allGeno" type="checkbox" name="genotypeFilter" value="All" checked="true" disabled="true">All
-        </td> </tr>
-        <tr><td>
-            <table id="userFilters">
-            </table>
-        </td></tr>
-        <tr id="geneSelector" class="genotypeDesc" style="display:none"><td>
-            <label>LEF1</label><br>
-            <input type="checkbox" name="LEF1" value="+/-">+/-<br>
-            <input type="checkbox" name="LEF1" value="-/-">-/-<br>
-            <input type="checkbox" name="LEF1" value="WT">WT<br>
-        </td><td>
-            <label>RANKL</label><br>
-            <input type="checkbox" name="RANKL" value="+/-">+/-<br>
-            <input type="checkbox" name="RANKL" value="-/-">-/-<br>
-            <input type="checkbox" name="RANKL" value="WT">WT<br>
-        </td><td>
-            <label>PTHrP</label><br>
-            <input type="checkbox" name="PTHrP" value="+/-">+/-<br>
-            <input type="checkbox" name="PTHrP" value="-/-">-/-<br>
-            <input type="checkbox" name="PTHrP" value="WT">WT<br>
-        </td></tr>
-        <tr id="doneRow" class="genotypeDesc" style="display:none"><td>
-            <input id="doneGenotypeFilter" type="button" value="Done">
-        </td></tr>
-        <tr><td>
-            <input id="addGenotypeFilter" type="image" src="/static/img/plus.png" alt="Add" width="24" height="24">
-            Add genotype filter
-        </td></tr>
-        </table>
-    </div>
-    <div id="group-tab-panel" >
-        <table>
-        <tr> <td>
-            <input type="checkbox" id="genderCheck" value="gender" checked="true">Gender
-        </td></tr>
-        <tr><td>
-            <input type="checkbox" id="litterCheck" value="litter">Litter
-        </td></tr>
-<!--        <tr><td>
-            <input type="checkbox" id="geneCheck" value="genotype">Genotype
-        </td></tr>
--->
-        </table>
-    </div>
-    <div id="image-tab-panel" >
-        <table cellspacing="10">
-            <tr><td>
-                <label><b>Circle Size By: </b></label>
-                <select id="selectSizeBy">
-                    <option value="uniform">Uniform</option>
-                    <option value="children">Number of children</option>
-                </select>
-            </td> </tr>
-            <tr><td>
-                <label><b>Color By: </b></label>
-                <select id="selectColorGroup">
-                    <option value="gender" selected="true">Gender</option>
-                    <option value="genotype">Genotype</option>
-                    <option value="customGenotype">Custom Genotype</option>
-                </select>
-            </td></tr>
-            <tr><td>
-                <table id="userColors" class="genotypeColor" style="display:none">
-                </table>
-            </td></tr>
-            <tr id="colorGeneSelector" class="genotypeColorSelect" style="display:none"><td>
-                <label>LEF1</label><br>
-                <input type="checkbox" name="LEF1" value="+/-">+/-<br>
-                <input type="checkbox" name="LEF1" value="-/-">-/-<br>
-                <input type="checkbox" name="LEF1" value="WT">WT<br>
-            </td><td>
-                <label>RANKL</label><br>
-                <input type="checkbox" name="RANKL" value="+/-">+/-<br>
-                <input type="checkbox" name="RANKL" value="-/-">-/-<br>
-                <input type="checkbox" name="RANKL" value="WT">WT<br>
-            </td><td>
-                <label>PTHrP</label><br>
-                <input type="checkbox" name="PTHrP" value="+/-">+/-<br>
-                <input type="checkbox" name="PTHrP" value="-/-">-/-<br>
-                <input type="checkbox" name="PTHrP" value="WT">WT<br>
-            </td></tr>
-            <tr id="doneColorRow" class="genotypeColorSelect" style="display:none"><td>
-                <input id="doneGenotypeColor" type="button" value="Done">
-            </td></tr>
-            <tr class="genotypeColor" style="display:none"><td>
-                <input id="addGenotypeColor" type="image" src="/static/img/plus.png" alt="Add" width="24" height="24">
-                Add genotype color
-            </td></tr>
-        </table>
-    </div>
-    <div id="search-tab-panel" >
-        <table cellspacing="10">
-            <tr><td>
-            <label><b>Search by MouseId: </b></label>
-            <input id="searchMouse" type="text" name="searchbox">
-            <input id="submitSearch" type="button" value="Find">
-            </td></tr>
-            <tr><td>
-            <p id="searchError" style="color:red; display:none;">MouseId not found in the display</p>
-            </td></tr>
-        </table>
-    </div>
-</div>
+<div id="mouseInfoDetails"> </div>
 
-<a id="tabset-tab" class="menu-tab" href="#">Interaction</a>
-
-<div id="mouseInfoDetails">
-</div>
-<div id="mouseInfoLineage">
-</div>
-
-</body>
+<div id="mouseInfoLineage"> </div>
 
 {% endblock %}

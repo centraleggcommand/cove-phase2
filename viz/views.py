@@ -60,7 +60,7 @@ def draw_colony(request):
         jsonAllMice = vizd.all_mice_gen()
         contextVars = {'jsonAllMice': jsonAllMice,
 					   'curr_domain': request.get_host(),
-                  'colonySelect': 'selected'}
+                  'viewSelection': 'colony'}
         return render(request, 'colony.html', contextVars)
 
 def draw_stats(request):
@@ -69,5 +69,5 @@ def draw_stats(request):
         jsonAllMice = vizd.all_mice_gen()
         contextVars = {'jsonAllMice': jsonAllMice,
 					   'curr_domain': request.get_host(),
-                  'statsSelect': 'selected'}
+                  'viewSelection': 'stats'}
         return render(request, 'stats.html', contextVars)
