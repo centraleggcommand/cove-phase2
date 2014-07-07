@@ -13,18 +13,23 @@
     <script src="/static/d3.v3.min.js"></script>
     <script src="/static/jquery-2.0.3.min.js"></script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="/static/jquery-ui-1.10.4/ui/minified/jquery.ui.core.min.js"></script>
+    <script src="/static/jquery-ui-1.10.4/ui/minified/jquery.ui.datepicker.min.js"></script>
+    <script src="/static/arrows.js"></script>
+    <script src="/static/colony_view.js"></script>
+
     
     <script type="text/javascript">
     	$(document).ready(function(){
 
           // Change highlighted item in nav bar
           if ("{{ viewSelection }}" == "colony") {
-              $(".viewSelector").filter('.active').toggle('active');
-              $("#colonyView").toggleClass('active');
+              $(".viewSelector").filter('.active').removeClass('active');
+              $("#colonyView").addClass('active');
           }
           else {
-              $(".viewSelector").filter('.active').toggle('active');
-              $("#statsView").toggleClass('active');
+              $(".viewSelector").filter('.active').removeClass('active');
+              $("#statsView").addClass('active');
           }
 
           // Event to go to a new page
